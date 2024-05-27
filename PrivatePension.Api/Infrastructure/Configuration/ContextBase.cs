@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -20,17 +21,41 @@ namespace Infrastructure.Configuration
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            var admin = new User 
+            {
+                Id = 1,
+                Username = "Admin 1",
+                Email = "admin@admin.com",
+                Role = Domain.Enums.UserRolesEnum.admin
+            };
+            var client = new User
+            {
+                Id = 2,
+                Username = "Cliente 1",
+                Email = "cliente2@client.com",
+                Role = Domain.Enums.UserRolesEnum.client,
+                WalletBalance = 300
+            };
 
-            // Data Seeding
-            modelBuilder.Entity<Product>().HasData(
-                new Product { Id = 1, Name = "Produto A", Price = 100, Description = "Descrição do Produto A" },
-                new Product { Id = 2, Name = "Produto B", Price = 200, Description = "Descrição do Produto B" }
-            );
+            var passwordHasher = new PasswordHasher<User>();
+            admin.Password = passwordHasher.HashPassword(admin, "Admin@123");
+            client.Password = passwordHasher.HashPassword(client, "Client@123");
 
             modelBuilder.Entity<User>().HasData(
-                new User { Id = 1, Username = "Admin 1", Email = "admin@admin.com", Password = "Admin@123", Role = Domain.Enums.UserRoles.admin },
-                new User { Id = 2, Username = "Cliente 1", Email = "cliente2@client.com", Password = "Client@123", Role = Domain.Enums.UserRoles.client , WalletBalance = 300 }
+                admin, client
             );
+            
+            
+            
+            modelBuilder.Entity<Product>().HasData(
+                new Product { Id = 1, Name = "Crédito Privado II RF", Price = 300, Description = "O Renda Fixa Crédito Privado II é um fundo que tem títulos de crédito privado selecionados pela BRAM " },
+                new Product { Id = 2, Name = "Crédito Privado Premium RF", Price = 500, Description = "Investir em títulos públicos e privados pós fixados, com rentabilidade atrelada ao CDI" }
+            );
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=PrivatePensionDb;Trusted_Connection=True;Integrated Security=True;Encrypt=False;");
         }
     }
 }
