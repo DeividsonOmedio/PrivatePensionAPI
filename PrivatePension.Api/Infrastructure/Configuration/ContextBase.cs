@@ -24,14 +24,14 @@ namespace Infrastructure.Configuration
             var admin = new User 
             {
                 Id = 1,
-                Username = "Admin 1",
+                UserName = "Admin 1",
                 Email = "admin@admin.com",
                 Role = Domain.Enums.UserRolesEnum.admin
             };
             var client = new User
             {
                 Id = 2,
-                Username = "Cliente 1",
+                UserName = "Cliente 1",
                 Email = "cliente2@client.com",
                 Role = Domain.Enums.UserRolesEnum.client,
                 WalletBalance = 300
