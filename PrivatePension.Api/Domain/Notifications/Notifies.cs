@@ -10,8 +10,25 @@ namespace Domain.Notifications
     public class Notifies
     {
         [NotMapped]
-        public bool? status { get; set; }
+        public bool? Status { get; set; }
         [NotMapped]
-        public string mensagem { get; set; } = string.Empty;
+        public string Message { get; set; }
+
+        private Notifies(bool status, string message)
+        {
+            Status = status;
+            Message = message;
+        }
+
+        public static Notifies Success(string message = "")
+        {
+            return new Notifies(true, message);
+        }
+
+        public static Notifies Failure(string message)
+        {
+            return new Notifies(false, message);
+        }
+
     }
 }
