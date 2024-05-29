@@ -15,6 +15,13 @@ namespace Services
             if (validate.Status == false)
                 return validate;
 
+            var userEmail = await _userRepository.GetByEmail(user.Email);
+            if (userEmail != null)
+                return Notifies.Error("Email already registered");
+
+            if (user.Role == Domain.Enums.UserRolesEnum.admin)
+                user.WalletBalance = null;
+
             return await _userRepository.Add(user);
         }
 
@@ -52,6 +59,9 @@ namespace Services
             var validate = ValidateUser(user);
             if (validate.Status == false)
                 return validate;
+
+            if (user.Role == Domain.Enums.UserRolesEnum.admin)
+                user.WalletBalance = null;
 
             return await _userRepository.Update(user);
         }

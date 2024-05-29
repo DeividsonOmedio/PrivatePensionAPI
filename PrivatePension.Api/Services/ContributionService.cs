@@ -71,6 +71,14 @@ namespace Services
             if (validateContribution.Status == false)
                 return validateContribution;
 
+            var purchase = await _purchaseService.GetPurchaseById(contribution.PurchaseId);
+            if (purchase == null)
+                return Notifies.Error("Purchase not found");
+
+            var user = await _userService.GetUserById(purchase.ClientId);
+            if (user.WalletBalance < contribution.Amount)
+                return Notifies.Error("Insufficient funds");
+
             return await _contributionRepository.Update(contribution);
         }
 

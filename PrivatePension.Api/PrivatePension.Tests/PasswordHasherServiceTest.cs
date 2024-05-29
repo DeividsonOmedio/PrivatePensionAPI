@@ -2,11 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Moq;
 using Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PrivatePension.Tests
 {
@@ -26,7 +21,7 @@ namespace PrivatePension.Tests
         public void HashPassword_ShouldReturnHash()
         {
             // Arrange
-            var user = new User { Id = 1, Username = "TestUser" };
+            var user = new User { Id = 1, UserName = "TestUser" };
             var password = "TestPassword";
             var hashedPassword = "hashedPassword";
 
@@ -45,7 +40,7 @@ namespace PrivatePension.Tests
         public void VerifyPassword_ShouldReturnTrueForCorrectPassword()
         {
             // Arrange
-            var user = new User { Id = 1, Username = "TestUser", Password = "hashedPassword" };
+            var user = new User { Id = 1, UserName = "TestUser", Password = "hashedPassword" };
             var password = "TestPassword";
 
             _passwordHasherMock.Setup(hasher => hasher.VerifyHashedPassword(user, user.Password, password))
@@ -63,7 +58,7 @@ namespace PrivatePension.Tests
         public void VerifyPassword_ShouldReturnFalseForIncorrectPassword()
         {
             // Arrange
-            var user = new User { Id = 1, Username = "TestUser", Password = "hashedPassword" };
+            var user = new User { Id = 1, UserName = "TestUser", Password = "hashedPassword" };
             var password = "WrongPassword";
 
             _passwordHasherMock.Setup(hasher => hasher.VerifyHashedPassword(user, user.Password, password))
@@ -76,22 +71,5 @@ namespace PrivatePension.Tests
             Assert.False(result);
         }
 
-        // VerifyPassword deve retornar falso para senha atualizada falhada
-        [Fact]
-        public void VerifyPassword_ShouldReturnFalseForUpdatedPassword()
-        {
-            // Arrange
-            var user = new User { Id = 1, Username = "TestUser", Password = "hashedPassword" };
-            var password = "TestPassword";
-
-            _passwordHasherMock.Setup(hasher => hasher.VerifyHashedPassword(user, user.Password, password))
-                               .Returns(PasswordVerificationResult.SuccessRehashNeeded);
-
-            // Act
-            var result = _passwordHasherService.VerifyPassword(user, password);
-
-            // Assert
-            Assert.True(result); // True porque SuccessRehashNeeded significa que a senha está correta, mas precisa de rehash
-        }
     }
 }

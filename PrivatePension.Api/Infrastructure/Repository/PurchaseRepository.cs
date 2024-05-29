@@ -18,7 +18,7 @@ namespace Infrastructure.Repository
 
         public async Task<List<Purchase>> GetByStatus(bool status)
         {
-            return await _dbSet.Where(purchase => purchase.Status == status).ToListAsync();
+            return await _dbSet.Where(purchase => purchase.IsApproved == status).ToListAsync();
         }
 
         public async Task<List<Purchase>> GetByUser(int user)

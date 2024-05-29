@@ -1,501 +1,404 @@
-﻿using Domain.Entities;
+﻿using Bogus;
+using Domain.Entities;
 using Domain.Enums;
+using Domain.Interfaces.InterfacesRepositories;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Services;
 
 namespace PrivatePension.Tests
 {
     public class UserServiceTest
     {
-        //criar user e adicionar
         [Fact]
-        public void UserService_Add_ShouldAddUser()
+        public async void UserService_Add_ShouldAddUser()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var client = new Faker<User>()
+                .RuleFor(Random => Random.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => f.Random.Decimal(100, 1000))
+                .Generate();
 
-            // Act
-            userService.Add(user);
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Once);
+            await userService.AddUser(client);
+
+            userRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Once);
 
         }
 
-        //criar user sem username e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserWithoutUsername()
+        public async Task UserService_Add_ShouldNotAddUserWithoutUsername()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "",
-                Email = teste@teste.com"",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var user = new Faker<User>()
+                .RuleFor(Random => Random.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => f.Random.Decimal(100, 1000))
+                .Generate();
+           
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
 
-            // Act
-            userService.Add(user);
+            var result = await userService.AddUser(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            userRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //criar user sem email e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserWithoutEmail()
+        public async Task UserService_Add_ShouldNotAddUserWithoutEmail()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var user = new Faker<User>()
+               .RuleFor(Random => Random.Id, f => f.Random.Int(1, 100))
+               .RuleFor(c => c.UserName, f => f.Person.FirstName)
+               .RuleFor(c => c.Password, f => f.Internet.Password())
+               .RuleFor(c => c.Role, f => UserRolesEnum.client)
+               .RuleFor(c => c.WalletBalance, f => f.Random.Decimal(100, 1000))
+               .Generate();
 
-            // Act
-            userService.Add(user);
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            var result = await userService.AddUser(user);
+
+            userRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //criar user sem password e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserWithoutPassword()
+        public async Task UserService_Add_ShouldNotAddUserWithoutPassword()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var user = new Faker<User>()
+                .RuleFor(Random => Random.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => f.Random.Decimal(100, 1000))
+                .Generate();
 
-            // Act
-            userService.Add(user);
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            
+            var result = await userService.AddUser(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            userRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //criar user sem role e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserWithoutRole()
+        public async Task UserService_Add_ShouldAddUserAdminWithoutWalletBalance()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                WalletBalance = 100
-            };
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var user = new Faker<User>()
+                .RuleFor(Random => Random.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .Generate();
 
-            // Act
-            userService.Add(user);
+            var result = await userService.AddUser(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            userRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Once);
         }
 
-        //criar user role=client sem walletbalance e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserClientWithoutWalletBalance()
+        public async Task UserService_Add_ShouldNotAddUserWithExistingEmail()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.client
-            };
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var existingUser = new Faker<User>()
+                .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
 
-            // Act
-            userService.Add(user);
+            userRepositoryMock.Setup(x => x.GetByEmail(existingUser.Email)).ReturnsAsync(existingUser);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            var user = new Faker<User>()
+                .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => existingUser.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
+
+            var result = await userService.AddUser(user);
+
+            userRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //criar user role=admin sem walletbalance e adicionar
         [Fact]
-        public void UserService_Add_ShouldAddUserAdminWithoutWalletBalance()
+        public async Task UserService_Update_ShouldUpdateUser()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.admin
-            }
+            var user = new Faker<User>()
+                .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
+            
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
 
-            // Act
-            userService.Add(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Once);
+            var result = await userService.UpdateUser(user);
+
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Once);
         }
 
-        //criar user role=admin com walletbalance e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserAdminWithWalletBalance()
+        public async Task UserService_Update_ShouldNotUpdateUserWithoutUsername()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.admin,
-                WalletBalance = 100
-            };
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var user = new Faker<User>()
+                .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => "")
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
 
-            // Act
-            userService.Add(user);
+            var result = await userService.UpdateUser(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //criar user com email invalido e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserWithInvalidEmail()
+        public async Task UserService_Update_ShouldNotUpdateUserWithoutEmail()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var user = new Faker<User>()
+                .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => "")
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
 
-            // Act
-            userService.Add(user);
+            var result = await userService.UpdateUser(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
+           
         }
 
-        //criar user com email ja existente e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserWithExistingEmail()
+        public async Task UserService_Update_ShouldNotUpdateUserWithoutPassword()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var user = new Faker<User>()
+                .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => "")
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
 
-            // Act
-            userService.Add(user);
+            var result = await userService.UpdateUser(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Once);
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //criar user com username ja existente e nao adicionar
         [Fact]
-        public void UserService_Add_ShouldNotAddUserWithExistingUsername()
+        public async Task UserService_Update_ShouldNotUpdateUserWithoutRole()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var user = new Faker<User>()
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
 
-            // Act
-            userService.Add(user);
+            var result = await userService.UpdateUser(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Once);
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //update user e atualizar
         [Fact]
-        public void UserService_Update_ShouldUpdateUser()
+        public async Task UserService_Update_ShouldNotUpdateUserClientWithoutWalletBalance()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var user = new Faker<User>()
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .Generate();
 
-            // Act
-            userService.Update(user);
+            var result = await userService.UpdateUser(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Once);
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //update user sem username e nao atualizar
+
         [Fact]
-        public void UserService_Update_ShouldNotUpdateUserWithoutUsername()
+        public async Task UserService_Update_ShouldUpdateUserAdminWithoutWalletBalance()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "",
-                Email = "teste@teste.com",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var user = new Faker<User>()
+                .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.admin)
+                .Generate();
 
-            // Act
-            userService.Update(user);
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            userRepositoryMock.Setup(x => x.GetById(user.Id)).ReturnsAsync(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            var result = await userService.UpdateUser(user);
+
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Once);
         }
 
-        //update user sem email e nao atualizar
         [Fact]
-        public void UserService_Update_ShouldNotUpdateUserWithoutEmail()
+        public async Task UserService_Update_ShouldNotUpdateUserAdminWithWalletBalance()
         {
             // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "",
-                Password = "teste123",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var user = new Faker<User>()
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => f.Person.Email)
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.admin)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
 
-            // Act
-            userService.Update(user);
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            userRepositoryMock.Setup(x => x.GetById(user.Id)).ReturnsAsync(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            var result = await userService.UpdateUser(user);
+
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //update user sem password e nao atualizar
         [Fact]
-        public void UserService_Update_ShouldNotUpdateUserWithoutPassword()
+        public async Task UserService_Update_ShouldNotUpdateUserWithInvalidEmail()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var user = new User
-            {
-                Id = 1,
-                Username = "User 1",
-                Email = "teste@teste.com",
-                Password = "",
-                Role = UserRolesEnum.client,
-                WalletBalance = 100
-            };
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var user = new Faker<User>()
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => "invalidemail")
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
 
-            // Act
-            userService.Update(user);
+            userRepositoryMock.Setup(x => x.GetById(user.Id)).ReturnsAsync(user);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            var result = await userService.UpdateUser(user);
+
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //delete user by id e remover
         [Fact]
-        public void UserService_Delete_ShouldDeleteUserById()
+        public async Task UserService_Update_ShouldNotUpdateUserWithExistingEmail()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
+            var user = new Faker<User>()
+                .RuleFor(c => c.UserName, f => f.Person.FirstName)
+                .RuleFor(c => c.Email, f => "")
+                .RuleFor(c => c.Password, f => f.Internet.Password())
+                .RuleFor(c => c.Role, f => UserRolesEnum.client)
+                .RuleFor(c => c.WalletBalance, f => 100)
+                .Generate();
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            userRepositoryMock.Setup(x => x.GetByEmail(user.Email)).ReturnsAsync(user);
+
+            var result = await userService.UpdateUser(user);
+
+            userRepositoryMock.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
+            Assert.False(result.Status);
+        }
+
+
+        [Fact]
+        public async Task UserService_GetById_ShouldReturnUser()
+        {
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+            var id = new Faker().Random.Int();
+            var user = new Faker<User>()
+                .RuleFor(c => c.Id, f => f.Random.Int(1 ,100))
+                .Generate();
+
+            userRepositoryMock.Setup(x => x.GetById(user.Id)).ReturnsAsync(user);
+
+            var result = await userService.GetUserById(user.Id);
+
+            userRepositoryMock.Verify(x => x.GetById(user.Id), Times.Once);
+            Assert.Equal(user, result);
+        }
+
+        [Fact]
+        public async Task UserService_GetById_ShouldReturnNullForNonExistingUser()
+        {
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
             var userId = 1;
 
-            // Act
-            userService.Delete(userId);
+            userRepositoryMock.Setup(x => x.GetById(userId)).ReturnsAsync((User)null);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.Delete(It.IsAny<int>()), Times.Once);
+            var result = await userService.GetUserById(userId);
+
+            userRepositoryMock.Verify(x => x.GetById(userId), Times.Once);
+        }
+            
+        [Fact]
+        public async void UserService_GetAll_ShouldReturnAllUsers()
+        {
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
+
+            await userService.GetAllUsers();
+
+            userRepositoryMock.Verify(x => x.GetAll(), Times.Once);
+
         }
 
-        //delete user by id inexistente e nao remover
         [Fact]
-        public void UserService_Delete_ShouldNotDeleteUserByNonexistentId()
+        public async void UserService_GetByEmail_ShouldReturnUserByEmail()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var userId = 0;
-
-            // Act
-            userService.Delete(userId);
-
-            // Assert
-            productRepositoryMock.Verify(x => x.Delete(It.IsAny<int>()), Times.Never);
-        }
-
-        //get user by id e retornar
-        [Fact]
-        public void UserService_GetById_ShouldReturnUserById()
-        {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var userId = 1;
-
-            // Act
-            userService.GetById(userId);
-
-            // Assert
-            productRepositoryMock.Verify(x => x.GetById(It.IsAny<int>()), Times.Once);
-        }
-
-        //get user by id inexistente e nao retornar
-        [Fact]
-        public void UserService_GetById_ShouldNotReturnUserByNonexistentId()
-        {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var userId = 0;
-
-            // Act
-            userService.GetById(userId);
-
-            // Assert
-            productRepositoryMock.Verify(x => x.GetById(It.IsAny<int>()), Times.Never);
-        }
-
-        //get all users e retornar
-        [Fact]
-        public void UserService_GetAll_ShouldReturnAllUsers()
-        {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-
-            // Act
-            userService.GetAll();
-
-            // Assert
-            productRepositoryMock.Verify(x => x.GetAll(), Times.Once);
-        }
-
-        //get all users sem usuarios e nao retornar
-        [Fact]
-        public void UserService_GetAll_ShouldNotReturnAllUsersWithoutUsers()
-        {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-
-            // Act
-            userService.GetAll();
-
-            // Assert
-            productRepositoryMock.Verify(x => x.GetAll(), Times.Never);
-        }
-
-        //get user by email e retornar
-        [Fact]
-        public void UserService_GetByEmail_ShouldReturnUserByEmail()
-        {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userService = new UserService(userRepositoryMock.Object);
             var email = "teste@teste.com";
 
-            // Act
-            userService.GetByEmail(email);
+            await userService.GetUserByEmail(email);
 
-            // Assert
-            productRepositoryMock.Verify(x => x.GetByEmail(It.IsAny<string>()), Times.Once);
-
+            userRepositoryMock.Verify(x => x.GetByEmail(It.IsAny<string>()), Times.Once);
         }
-
-        //get user by email inexistente e nao retornar
-        [Fact]
-        public void UserService_GetByEmail_ShouldNotReturnUserByNonexistentEmail()
-        {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var userService = new UserService(productRepositoryMock.Object);
-            var email = "";
-
-            // Act
-            userService.GetByEmail(email);
-
-            // Assert
-            productRepositoryMock.Verify(x => x.GetByEmail(It.IsAny<string>()), Times.Never);
-        }
-
-
     }
 }
