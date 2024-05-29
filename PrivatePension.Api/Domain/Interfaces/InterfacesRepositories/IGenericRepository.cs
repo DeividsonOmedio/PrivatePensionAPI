@@ -12,7 +12,7 @@ namespace Domain.Interfaces.InterfacesRepositories
         Task<Notifies> Add(T entity);
         Task<Notifies> Update(T entity);
         Task<Notifies> Delete(T entity);
-        Task<T> GetById(int id);
+        Task<T?> GetById(int id);
         Task<List<T>> GetAll();
     }
 }

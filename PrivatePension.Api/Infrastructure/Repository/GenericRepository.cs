@@ -4,17 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository
 {
-    public class GenericRepository<T> : IGenericRepository<T> where T : class
+    public class GenericRepository<T>(DbContext context) : IGenericRepository<T> where T : class
     {
-        private readonly DbContext _context;
-        private readonly DbSet<T> _dbSet;
+        protected readonly DbContext _context = context;
+        protected readonly DbSet<T> _dbSet = context.Set<T>();
 
-        public GenericRepository(DbContext context)
-        {
-            _context = context;
-            _dbSet = context.Set<T>();
-        }
-       public async Task<Notifies> Add(T entity)
+        public async Task<Notifies> Add(T entity)
         {
             await _dbSet.AddAsync(entity);
             await _context.SaveChangesAsync();
@@ -35,7 +30,7 @@ namespace Infrastructure.Repository
             return Notifies.Success();
         }
 
-        public async Task<T> GetById(int id)
+        public async Task<T?> GetById(int id)
         {
             return await _dbSet.FindAsync(id);
         }
