@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Interfaces.Interfaceservices;
 using Domain.Interfaces.InterfacesRepositories;
@@ -18,6 +14,13 @@ namespace Services
             var validate = ValidateUser(user);
             if (validate.Status == false)
                 return validate;
+
+            var userEmail = await _userRepository.GetByEmail(user.Email);
+            if (userEmail != null)
+                return Notifies.Error("Email already registered");
+
+            if (user.Role == Domain.Enums.UserRolesEnum.admin)
+                user.WalletBalance = null;
 
             return await _userRepository.Add(user);
         }
@@ -56,6 +59,9 @@ namespace Services
             var validate = ValidateUser(user);
             if (validate.Status == false)
                 return validate;
+
+            if (user.Role == Domain.Enums.UserRolesEnum.admin)
+                user.WalletBalance = null;
 
             return await _userRepository.Update(user);
         }

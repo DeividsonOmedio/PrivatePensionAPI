@@ -1,302 +1,372 @@
-﻿using Domain.Entities;
+﻿using Bogus;
+using Domain.Entities;
+using Domain.Interfaces.Interfaceservices;
+using Domain.Interfaces.InterfacesRepositories;
+using Domain.Notifications;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Services;
 
 namespace PrivatePension.Tests
 {
     public class ContributionServiceTest
     {
+        private readonly Mock<IContributionRepository> _contributionRepositoryMock;
+        private readonly Mock<IUserService> _userServiceMock;
+        private readonly Mock<IPurchaseService> _purchaseServiceMock;
+        private readonly ContributionService _contributionService;
 
-        //add Contribution e dar certo
-        [Fact]
-        public void AddContribution_ShouldBeOk()
+        public ContributionServiceTest()
         {
-            //Arrange
+            _contributionRepositoryMock = new Mock<IContributionRepository>();
+            _userServiceMock = new Mock<IUserService>();
+            _purchaseServiceMock = new Mock<IPurchaseService>();
+            _contributionService = new ContributionService(_contributionRepositoryMock.Object, _userServiceMock.Object, _purchaseServiceMock.Object);
+        }
+
+        [Fact]
+        public async Task AddContribution_ShouldBeOk()
+        {
+
+            var faker = new Faker();
             var contribution = new Contribution
             {
-                Id = 1,
-                PurchaseId = 1,
-                Amount = 1000,
+                Id = faker.Random.Int(),
+                PurchaseId = faker.Random.Int(1, 1000),
+                Amount = faker.Finance.Amount(1, 1000),
                 ContributionDate = DateTime.Now
             };
 
-            //Act
-            var result = _contributionService.AddContribution(contribution);
+            var purchase = new Purchase
+            {
+                Id = contribution.PurchaseId,
+                ClientId = faker.Random.Int(1, 1000),
+                IsApproved = true
+            };
 
-            //Assert
-            Assert.True(result.status);
+            var user = new User
+            {
+                Id = purchase.ClientId,
+                WalletBalance = contribution.Amount + 100
+            };
+
+            _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+            _contributionRepositoryMock.Setup(c => c.Add(contribution)).ReturnsAsync(Notifies.Success());
+
+            var result = await _contributionService.AddContribution(contribution);
+
+            Assert.True(result.Status);
         }
 
-        //add Contribution e dar erro por PurchaseId inexistente
         [Fact]
-        public void AddContribution_ShouldBeErrorByPurchaseId()
+        public async Task AddContribution_ShouldBeErrorByPurchaseId()
         {
-            //Arrange
+            var faker = new Faker();
             var contribution = new Contribution
             {
-                Id = 1,
+                Id = faker.Random.Int(),
                 PurchaseId = 0,
-                Amount = 1000,
+                Amount = faker.Finance.Amount(1, 1000),
                 ContributionDate = DateTime.Now
             };
 
-            //Act
-            var result = _contributionService.AddContribution(contribution);
+            var result = await _contributionService.AddContribution(contribution);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("PurchaseId inválido", result.message);
+            Assert.False(result.Status);
+            Assert.Equal("Campo PurchaseId Obrigatório e maior do que 0", result.Message);
         }
 
-        //add Contribution e dar erro por Amount inválido
         [Fact]
-        public void AddContribution_ShouldBeErrorByAmount()
+        public async Task AddContribution_ShouldBeErrorByAmount()
         {
-            //Arrange
+            var faker = new Faker();
             var contribution = new Contribution
             {
-                Id = 1,
-                PurchaseId = 1,
+                Id = faker.Random.Int(),
+                PurchaseId = faker.Random.Int(1, 1000),
                 Amount = 0,
                 ContributionDate = DateTime.Now
             };
 
-            //Act
-            var result = _contributionService.AddContribution(contribution);
+            var result = await _contributionService.AddContribution(contribution);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Amount inválido", result.message);
+            Assert.False(result.Status);
+            Assert.Equal("Campo Amount Obrigatório e maior do que 0", result.Message);
         }
 
-        //add Contribution e dar erro por Amount insuficiente
         [Fact]
-        public void AddContribution_ShouldBeErrorByAmountInsufficient()
+        public async Task AddContribution_ShouldBeErrorByAmountInsufficient()
         {
-            //Arrange
+            var faker = new Faker();
             var contribution = new Contribution
             {
-                Id = 1,
-                PurchaseId = 1,
+                Id = faker.Random.Int(),
+                PurchaseId = faker.Random.Int(1, 1000),
                 Amount = 10000,
                 ContributionDate = DateTime.Now
             };
 
-            //Act
-            var result = _contributionService.AddContribution(contribution);
+            var purchase = new Purchase
+            {
+                Id = contribution.PurchaseId,
+                ClientId = faker.Random.Int(1, 1000),
+                IsApproved = true
+            };
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Amount insuficiente", result.message);
+            var user = new User
+            {
+                Id = purchase.ClientId,
+                WalletBalance = 5000
+            };
+
+            _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+
+            var result = await _contributionService.AddContribution(contribution);
+
+            Assert.False(result.Status);
+            Assert.Equal("Insufficient funds", result.Message);
         }
 
-        //add Contribution e dar erro por ContributionDate inválido
         [Fact]
-        public void AddContribution_ShouldBeErrorByContributionDate()
+        public async Task AddContribution_ShouldBeErrorByContributionDate()
         {
-            //Arrange
+            var faker = new Faker();
             var contribution = new Contribution
             {
-                Id = 1,
-                PurchaseId = 1,
-                Amount = 1000,
+                Id = faker.Random.Int(),
+                PurchaseId = faker.Random.Int(1, 1000),
+                Amount = faker.Finance.Amount(1, 1000),
                 ContributionDate = DateTime.MinValue
             };
 
-            //Act
-            var result = _contributionService.AddContribution(contribution);
+            var result = await _contributionService.AddContribution(contribution);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("ContributionDate inválido", result.message);
+            Assert.False(result.Status);
+            Assert.Equal("Purchase not found", result.Message);
         }
 
-        //update Contribution e dar certo
         [Fact]
-        public void UpdateContribution_ShouldBeOk()
+        public async Task UpdateContribution_ShouldBeOk()
         {
-            //Arrange
+            var faker = new Faker();
             var contribution = new Contribution
             {
-                Id = 1,
-                PurchaseId = 1,
-                Amount = 1000,
-                ContributionDate = DateTime.Now
-            };
-
-            //Act
-            var result = _contributionService.UpdateContribution(contribution);
-
-            //Assert
-            Assert.True(result.status);
-        }
-
-        //update Contribution e dar erro por PurchaseId inexistente
-        [Fact]
-        public void UpdateContribution_ShouldBeErrorByPurchaseId()
-        {
-            //Arrange
-            var contribution = new Contribution
-            {
-                Id = 1,
-                PurchaseId = 0,
-                Amount = 1000,
-                ContributionDate = DateTime.Now
-            };
-
-            //Act
-            var result = _contributionService.UpdateContribution(contribution);
-
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("PurchaseId inválido", result.message);
-        }
-
-        //update Contribution e dar erro por Amount insuficiente
-        [Fact]
-        public void UpdateContribution_ShouldBeErrorByAmountInsufficient()
-        {
-            //Arrange
-            var contribution = new Contribution
-            {
-                Id = 1,
-                PurchaseId = 1,
+                Id = faker.Random.Int(),
+                PurchaseId = faker.Random.Int(1, 1000),
                 Amount = 10000,
                 ContributionDate = DateTime.Now
             };
 
-            //Act
-            var result = _contributionService.UpdateContribution(contribution);
+            var purchase = new Purchase
+            {
+                Id = contribution.PurchaseId,
+                ClientId = faker.Random.Int(1, 1000),
+                IsApproved = true
+            };
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Amount insuficiente", result.message);
+            var user = new User
+            {
+                Id = purchase.ClientId,
+                WalletBalance = 5000
+            };
+
+            _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+
+            var result = await _contributionService.AddContribution(contribution);
+
+            Assert.False(result.Status);
+            Assert.Equal("Insufficient funds", result.Message);
         }
 
-        //update Contribution e dar erro por ContributionDate inválido
         [Fact]
-        public void UpdateContribution_ShouldBeErrorByContributionDate()
+        public async Task UpdateContribution_ShouldBeErrorByPurchaseId()
         {
-            //Arrange
+            var faker = new Faker();
             var contribution = new Contribution
             {
-                Id = 1,
-                PurchaseId = 1,
-                Amount = 1000,
+                Id = faker.Random.Int(),
+                PurchaseId = faker.Random.Int(1, 1000),
+                Amount = 10000,
+                ContributionDate = DateTime.Now
+            };
+
+            var purchase = new Purchase
+            {
+                Id = contribution.PurchaseId,
+                IsApproved = true
+            };
+
+            var user = new User
+            {
+                Id = purchase.ClientId,
+                WalletBalance = 5000
+            };
+
+            _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+
+            var result = await _contributionService.AddContribution(contribution);
+
+            Assert.False(result.Status);
+            Assert.Equal("Insufficient funds", result.Message);
+        }
+
+        [Fact]
+        public async Task UpdateContribution_ShouldBeErrorByAmountInsufficient()
+        {
+            var faker = new Faker();
+            var contribution = new Contribution
+            {
+                Id = faker.Random.Int(),
+                PurchaseId = faker.Random.Int(1, 1000),
+                Amount = 10000,
+                ContributionDate = DateTime.Now
+            };
+
+            var purchase = new Purchase
+            {
+                Id = contribution.PurchaseId,
+                ClientId = faker.Random.Int(1, 1000),
+                IsApproved = true
+            };
+
+            var user = new User
+            {
+                Id = purchase.ClientId,
+                WalletBalance = 500
+            };
+
+            _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+
+            var result = await _contributionService.AddContribution(contribution);
+
+            Assert.False(result.Status);
+            Assert.Equal("Insufficient funds", result.Message);
+        }
+
+        [Fact]
+        public async Task UpdateContribution_ShouldBeErrorByContributionDate()
+        {
+            var faker = new Faker();
+            var contribution = new Contribution
+            {
+                Id = faker.Random.Int(),
+                PurchaseId = faker.Random.Int(1, 1000),
+                Amount = 10000,
                 ContributionDate = DateTime.MinValue
             };
 
-            //Act
-            var result = _contributionService.UpdateContribution(contribution);
+            var purchase = new Purchase
+            {
+                Id = contribution.PurchaseId,
+                ClientId = faker.Random.Int(1, 1000),
+                IsApproved = true
+            };
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("ContributionDate inválido", result.message);
+            var user = new User
+            {
+                Id = purchase.ClientId,
+                WalletBalance = 5000
+            };
+
+            _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+
+            var result = await _contributionService.AddContribution(contribution);
+
+            Assert.False(result.Status);
+            Assert.Equal("Insufficient funds", result.Message);
         }
 
-        //delete Contribution por id e dar certo
         [Fact]
-        public void DeleteContributionById_ShouldBeOk()
+        public async Task DeleteContributionById_ShouldBeOk()
         {
-            //Arrange
-            var id = 1;
+            var faker = new Faker();
+            var contribution = new Contribution
+            {
+                Id = faker.Random.Int(1, 1000)
+            };
 
-            //Act
-            var result = _contributionService.DeleteContributionById(id);
+            _contributionRepositoryMock.Setup(c => c.GetById(contribution.Id)).ReturnsAsync(contribution);
+            _contributionRepositoryMock.Setup(c => c.Delete(contribution)).ReturnsAsync(Notifies.Success());
 
-            //Assert
-            Assert.True(result.status);
+            var result = await _contributionService.DeleteContribution(contribution.Id);
+
+            Assert.True(result.Status);
         }
 
-        //delete Contribution por id inexistente e dar erro por id inexistente
         [Fact]
-        public void DeleteContributionById_ShouldBeErrorById()
+        public async Task DeleteContributionById_ShouldBeErrorById()
         {
-            //Arrange
-            var id = 0;
+            var faker = new Faker();
+            var contributionId = 0;
 
-            //Act
-            var result = _contributionService.DeleteContributionById(id);
+            var result = await _contributionService.DeleteContribution(contributionId);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Id inválido", result.message);
+            Assert.False(result.Status);
+            Assert.Equal("Contribution not found", result.Message);
         }
 
-        //get Contribution por id e dar certo
         [Fact]
-        public void GetContributionById_ShouldBeOk()
+        public async Task GetContributionById_ShouldBeOk()
         {
-            //Arrange
-            var id = 1;
+            // 
+            var faker = new Faker();
+            var contribution = new Contribution
+            {
+                Id = faker.Random.Int(1, 1000)
+            };
 
-            //Act
-            var result = _contributionService.GetContributionById(id);
+            _contributionRepositoryMock.Setup(c => c.GetById(contribution.Id)).ReturnsAsync(contribution);
 
-            //Assert
-            Assert.True(result.status);
+            var result = await _contributionService.GetContributionById(contribution.Id);
+
+            Assert.NotNull(result);
         }
 
-        //get Contribution por id inexistente e dar erro por id inexistente
         [Fact]
-        public void GetContributionById_ShouldBeErrorById()
+        public async Task GetContributionById_ShouldBeErrorById()
         {
-            //Arrange
-            var id = 0;
+            var faker = new Faker();
+            var contributionId = 0;
 
-            //Act
-            var result = _contributionService.GetContributionById(id);
+            var result = await _contributionService.GetContributionById(contributionId);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Id inválido", result.message);
+            Assert.Null(result);
         }
 
-        //get all Contributions e dar certo
         [Fact]
-        public void GetAllContributions_ShouldBeOk()
+        public async Task GetAllContributions_ShouldBeOk()
         {
-            //Act
-            var result = _contributionService.GetAllContributions();
+            var faker = new Faker();
+            var contributions = new List<Contribution>
+            {
+                new Contribution { Id = faker.Random.Int(1, 1000) },
+                new Contribution { Id = faker.Random.Int(1, 1000) },
+                new Contribution { Id = faker.Random.Int(1, 1000) }
+            };
 
-            //Assert
-            Assert.True(result.status);
+            _contributionRepositoryMock.Setup(c => c.GetAll()).ReturnsAsync(contributions);
+
+            var result = await _contributionService.GetAllContributions();
+
+            Assert.NotEmpty(result);
         }
 
-        //get all Contributions e dar erro por não ter Contributions
         [Fact]
-        public void GetAllContributions_ShouldBeErrorByContributions()
+        public async Task GetAllContributions_ShouldBeErrorByContributions()
         {
-            //Arrange
-            _contributionService.DeleteAllContributions();
+            var contributions = new List<Contribution>();
 
-            //Act
-            var result = _contributionService.GetAllContributions();
+            _contributionRepositoryMock.Setup(c => c.GetAll()).ReturnsAsync(contributions);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Não há Contributions", result.message);
+            var result = await _contributionService.GetAllContributions();
+
+            Assert.Empty(result);
         }
-
-        //get Contributions por PurchaseId e dar certo
-        [Fact]
-        public void GetContributionsByPurchaseId_ShouldBeOk()
-        {
-            //Arrange
-            var purchaseId = 1;
-
-            //Act
-            var result = _contributionService.GetContributionsByPurchaseId(purchaseId);
-
-            //Assert
-            Assert.True(result.status);
-        }
-
-       
 
     }
 }

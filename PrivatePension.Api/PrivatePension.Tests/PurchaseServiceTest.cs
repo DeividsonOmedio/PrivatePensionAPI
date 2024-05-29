@@ -1,563 +1,240 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Bogus;
+using Domain.Entities;
+using Domain.Interfaces.Interfaceservices;
+using Domain.Interfaces.InterfacesRepositories;
+using Domain.Notifications;
+using Moq;
+using Services;
 
 namespace PrivatePension.Tests
 {
     public class PurchaseServiceTest
     {
-        //add Purchase e dar certo
-        [Fact]
-        public void AddPurchase_ShouldBeOk()
+        private readonly Mock<IPurchaseRepository> _purchaseRepositoryMock;
+        private readonly Mock<IUserService> _userServiceMock;
+        private readonly Mock<IProductService> _productServiceMock;
+        private readonly PurchaseService _purchaseService;
+
+        public PurchaseServiceTest()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.AddPurchase(purchase);
-
-            //Assert
-            Assert.True(result.status);
+            _purchaseRepositoryMock = new Mock<IPurchaseRepository>();
+            _userServiceMock = new Mock<IUserService>();
+            _productServiceMock = new Mock<IProductService>();
+            _purchaseService = new PurchaseService(_purchaseRepositoryMock.Object, _productServiceMock.Object, _userServiceMock.Object);
         }
 
-        //add Purchase e dar erro por CustomerId inexistente
         [Fact]
-        public void AddPurchase_ShouldBeErrorByCustomerId()
+        public async Task AddPurchase_ShouldBeOk()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 0,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var user = new User { Id = 1, WalletBalance = 2000 };
+            var product = new Product { Id = 1, Price = 1000 };
+            var purchase = new Purchase { ClientId = user.Id, ProductId = product.Id };
 
-            //Act
-            var result = _purchaseService.AddPurchase(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+            _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync(product);
+            _purchaseRepositoryMock.Setup(p => p.Add(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("CustomerId inválido", result.message);
+            var result = await _purchaseService.AddPurchase(purchase);
+
+            Assert.True(result.Status);
         }
 
-        //add Purchase e dar erro por Amount inválido
         [Fact]
-        public void AddPurchase_ShouldBeErrorByAmount()
+        public async Task AddPurchase_ShouldBeErrorByCustomerId()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 0,
-                PurchaseDate = DateTime.Now
-            };
+            var purchase = new Purchase { ClientId = 0, ProductId = 1 };
 
-            //Act
-            var result = _purchaseService.AddPurchase(purchase);
+            var result = await _purchaseService.AddPurchase(purchase);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Amount inválido", result.message);
+            Assert.False(result.Status);
+            Assert.Equal("Campo Client Id Obrigatório e maior do que 0", result.Message);
         }
 
-        //add Purchase e dar erro por PurchaseDate inválida
         [Fact]
-        public void AddPurchase_ShouldBeErrorByPurchaseDate()
+        public async Task AddPurchase_ShouldBeErrorByProduct()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.MinValue
-            };
+            var user = new User { Id = 1, WalletBalance = 2000 };
+            var purchase = new Purchase { ClientId = user.Id, ProductId = 0 };
 
-            //Act
-            var result = _purchaseService.AddPurchase(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+            _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync((Product)null);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("PurchaseDate inválida", result.message);
+            var result = await _purchaseService.AddPurchase(purchase);
+
+            Assert.False(result.Status);
+            Assert.Equal("Campo Product Id Obrigatório e maior do que 0", result.Message);
         }
 
-        //add Purchase e dar erro por Amount insuficiente
         [Fact]
-        public void AddPurchase_ShouldBeErrorByAmountInsufficient()
+        public async Task AddPurchase_ShouldBeErrorByCustomer()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 100,
-                PurchaseDate = DateTime.Now
-            };
+            var purchase = new Purchase { ClientId = 1, ProductId = 1 };
 
-            //Act
-            var result = _purchaseService.AddPurchase(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync((User)null);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Amount insuficiente", result.message);
+            var result = await _purchaseService.AddPurchase(purchase);
+
+            Assert.False(result.Status);
+            Assert.Equal("Product not found", result.Message);
         }
 
-        //add Purchase e dar erro por Cliente inexistente
         [Fact]
-        public void AddPurchase_ShouldBeErrorByCustomer()
+        public async Task AddPurchase_ShouldBeErrorByInsufficientBalance()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 0,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var user = new User { Id = 1, WalletBalance = 500 };
+            var product = new Product { Id = 1, Price = 1000 };
+            var purchase = new Purchase { ClientId = user.Id, ProductId = product.Id };
 
-            //Act
-            var result = _purchaseService.AddPurchase(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+            _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync(product);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Cliente inválido", result.message);
+            var result = await _purchaseService.AddPurchase(purchase);
+
+            Assert.False(result.Status);
+            Assert.Equal("Insufficient balance", result.Message);
         }
 
-        //add Purchase e dar erro por Produto inexistente
         [Fact]
-        public void AddPurchase_ShouldBeErrorByProduct()
+        public async Task UpdatePurchaseIsApproved_ShouldBeOk()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var purchase = new Faker<Purchase>()
+                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                .RuleFor(p => p.IsApproved, false)
+                .Generate();
 
-            //Act
-            var result = _purchaseService.AddPurchase(purchase);
+            _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
+            _purchaseRepositoryMock.Setup(p => p.Update(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Produto inválido", result.message);
+            var result = await _purchaseService.UpdatePurchaseIsApproved(purchase.Id);
+
+            Assert.True(result.Status);
         }
 
-        //add Purchase e dar erro por Purchase já existente
         [Fact]
-        public void AddPurchase_ShouldBeErrorByPurchaseAlreadyExists()
+        public async Task UpdatePurchaseIsApproved_ShouldBeErrorByPurchase()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var purchaseId = 1;
 
-            //Act
-            var result = _purchaseService.AddPurchase(purchase);
+            _purchaseRepositoryMock.Setup(p => p.GetById(purchaseId)).ReturnsAsync((Purchase)null);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Compra já existente", result.message);
+            var result = await _purchaseService.UpdatePurchaseIsApproved(purchaseId);
+
+            Assert.False(result.Status);
+            Assert.Equal("Purchase not found", result.Message);
         }
 
-        //update Purchase e dar certo
         [Fact]
-        public void UpdatePurchase_ShouldBeOk()
+        public async Task DeletePurchase_ShouldBeOk()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var purchase = new Faker<Purchase>()
+                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                .RuleFor(p => p.IsApproved, false)
+                .Generate();
 
-            //Act
-            var result = _purchaseService.UpdatePurchase(purchase);
+            _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
+            _purchaseRepositoryMock.Setup(p => p.Delete(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
 
-            //Assert
-            Assert.True(result.status);
+            var result = await _purchaseService.DeletePurchase(purchase.Id);
+
+            Assert.True(result.Status);
         }
 
-        //update Purchase e dar erro por Purchase inexistente
         [Fact]
-        public void UpdatePurchase_ShouldBeErrorByPurchase()
+        public async Task DeletePurchase_ShouldBeErrorByPurchase()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 0,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var purchaseId = 1;
 
-            //Act
-            var result = _purchaseService.UpdatePurchase(purchase);
+            _purchaseRepositoryMock.Setup(p => p.GetById(purchaseId)).ReturnsAsync((Purchase)null);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Compra inexistente", result.message);
+            var result = await _purchaseService.DeletePurchase(purchaseId);
+
+            Assert.False(result.Status);
+            Assert.Equal("Purchase not found", result.Message);
         }
 
-        //update Purchase e dar erro por CustomerId inexistente
         [Fact]
-        public void UpdatePurchase_ShouldBeErrorByCustomerId()
+        public async Task DeletePurchase_ShouldBeErrorByApprovedPurchase()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 0,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var purchase = new Faker<Purchase>()
+                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                .RuleFor(p => p.IsApproved, true)
+                .Generate();
 
-            //Act
-            var result = _purchaseService.UpdatePurchase(purchase);
+            _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("CustomerId inválido", result.message);
+            var result = await _purchaseService.DeletePurchase(purchase.Id);
+
+            Assert.False(result.Status);
+            Assert.Equal("Purchase already approved", result.Message);
         }
 
-        //update Purchase e dar erro por Amount inválido
         [Fact]
-        public void UpdatePurchase_ShouldBeErrorByAmount()
+        public async Task GetPurchaseById_ShouldBeOk()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 0,
-                PurchaseDate = DateTime.Now
-            };
+            var purchase = new Faker<Purchase>()
+                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                .Generate();
 
-            //Act
-            var result = _purchaseService.UpdatePurchase(purchase);
+            _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Amount inválido", result.message);
+            var result = await _purchaseService.GetPurchaseById(purchase.Id);
+
+            Assert.NotNull(result);
         }
 
-        //update Purchase e dar erro por PurchaseDate inválida
         [Fact]
-        public void UpdatePurchase_ShouldBeErrorByPurchaseDate()
+        public async Task GetPurchaseById_ShouldBeErrorByInvalidId()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.MinValue
-            };
+            var purchaseId = 0;
 
-            //Act
-            var result = _purchaseService.UpdatePurchase(purchase);
+            var result = await _purchaseService.GetPurchaseById(purchaseId);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("PurchaseDate inválida", result.message);
+            Assert.Null(result);
         }
 
-        //update Purchase e dar erro por Amount insuficiente
         [Fact]
-        public void UpdatePurchase_ShouldBeErrorByAmountInsufficient()
+        public async Task GetByUser_ShouldBeOk()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 100,
-                PurchaseDate = DateTime.Now
-            };
+            var user = new Faker<User>()
+                .RuleFor(u => u.Id, f => f.Random.Int(1, 1000))
+                .Generate();
 
-            //Act
-            var result = _purchaseService.UpdatePurchase(purchase);
+            var purchases = new Faker<Purchase>()
+                .RuleFor(p => p.ClientId, user.Id)
+                .Generate(5);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Amount insuficiente", result.message);
+            _userServiceMock.Setup(u => u.GetUserById(user.Id)).ReturnsAsync(user);
+            _purchaseRepositoryMock.Setup(p => p.GetByUser(user.Id)).ReturnsAsync(purchases);
+
+            var result = await _purchaseService.GetByUser(user.Id);
+
+            Assert.NotEmpty(result);
         }
 
-        //update Purchase e dar erro por Cliente inexistente
         [Fact]
-        public void UpdatePurchase_ShouldBeErrorByCustomer()
+        public async Task GetByUser_ShouldReturnEmptyListIfUserNotFound()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 0,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var userId = 1;
 
-            //Act
-            var result = _purchaseService.UpdatePurchase(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(userId)).ReturnsAsync((User)null);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Cliente inválido", result.message);
+            var result = await _purchaseService.GetByUser(userId);
+
+            Assert.Empty(result);
         }
 
-        //update Purchase e dar erro por Produto inexistente
         [Fact]
-        public void UpdatePurchase_ShouldBeErrorByProduct()
+        public async Task GetAllPurchases_ShouldBeOk()
         {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
+            var purchases = new Faker<Purchase>()
+                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                .Generate(5);
 
-            //Act
-            var result = _purchaseService.UpdatePurchase(purchase);
+            _purchaseRepositoryMock.Setup(p => p.GetAll()).ReturnsAsync(purchases);
 
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Produto inválido", result.message);
+            var result = await _purchaseService.GetAllPurchases();
+
+            Assert.NotEmpty(result);
         }
-
-        //delete Purchase por Id e dar certo
-        [Fact]
-        public void DeletePurchaseById_ShouldBeOk()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.DeletePurchaseById(purchase.Id);
-
-            //Assert
-            Assert.True(result.status);
-        }
-
-        //delete Purchase por Id e dar erro por Purchase inexistente
-        [Fact]
-        public void DeletePurchaseById_ShouldBeErrorByPurchase()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 0,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.DeletePurchaseById(purchase.Id);
-
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Compra inexistente", result.message);
-        }
-
-        //get Purchase por Id e dar certo
-        [Fact]
-        public void GetPurchaseById_ShouldBeOk()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.GetPurchaseById(purchase.Id);
-
-            //Assert
-            Assert.True(result.status);
-        }
-
-        //get Purchase por Id e dar erro por Purchase inexistente
-        [Fact]
-        public void GetPurchaseById_ShouldBeErrorByPurchase()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 0,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.GetPurchaseById(purchase.Id);
-
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Compra inexistente", result.message);
-        }
-
-        //get Purchase por CustomerId e dar certo
-        [Fact]
-        public void GetPurchaseByCustomerId_ShouldBeOk()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.GetPurchaseByCustomerId(purchase.CustomerId);
-
-            //Assert
-            Assert.True(result.status);
-        }
-
-        //get Purchase por CustomerId e dar erro por Purchase inexistente
-        [Fact]
-        public void GetPurchaseByCustomerId_ShouldBeErrorByPurchase()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 0,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.GetPurchaseByCustomerId(purchase.CustomerId);
-
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Compra inexistente", result.message);
-        }
-
-        //get Purchase por CustomerId e dar erro por Customer inexistente
-        [Fact]
-        public void GetPurchaseByCustomerId_ShouldBeErrorByCustomer()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 0,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.GetPurchaseByCustomerId(purchase.CustomerId);
-
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Cliente inválido", result.message);
-        }
-
-        //get Purchase por ProductId e dar certo
-        [Fact]
-        public void GetPurchaseByProductId_ShouldBeOk()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.GetPurchaseByProductId(purchase.ProductId);
-
-            //Assert
-            Assert.True(result.status);
-        }
-
-        //get Purchase por ProductId e dar erro por Purchase inexistente
-        [Fact]
-        public void GetPurchaseByProductId_ShouldBeErrorByPurchase()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 0,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.GetPurchaseByProductId(purchase.ProductId);
-
-            //Assert
-            Assert.False(result.status);
-            Assert.Equal("Compra inexistente", result.message);
-        }
-
-        // get all Purchases e dar certo
-        [Fact]
-        public void GetAllPurchases_ShouldBeOk()
-        {
-            //Arrange
-            var purchase = new Purchase
-            {
-                Id = 1,
-                CustomerId = 1,
-                Amount = 1000,
-                PurchaseDate = DateTime.Now
-            };
-
-            //Act
-            var result = _purchaseService.GetAllPurchases();
-
-            //Assert
-            Assert.True(result.status);
-        }
-
-        //get all Purchase e retornar lista vazia
-        [Fact]
-        public void GetAllPurchases_ShouldBeEmpty()
-        {
-            //Act
-            var result = _purchaseService.GetAllPurchases();
-
-            //Assert
-            Assert.False(result.status);
-            Assert.Empty(result.purchases);
-        }
-
     }
 }

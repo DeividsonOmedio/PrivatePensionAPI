@@ -1,5 +1,8 @@
 using Domain.Entities;
+using Domain.Interfaces.Interfaceservices;
+using Domain.Interfaces.InterfacesRepositories;
 using Infrastructure.Configuration;
+using Infrastructure.Repository;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Services;
@@ -17,6 +20,9 @@ services.AddDbContext<ContextBase>(options =>
 
 services.AddScoped<PasswordHasherService>();
 services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+services.AddScoped<IUserService, UserService>();
+services.AddScoped<IUserRepository, UserRepository>();
+
 
 
 builder.Services.AddControllers();

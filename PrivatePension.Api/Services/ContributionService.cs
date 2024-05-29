@@ -1,12 +1,22 @@
 using Domain.Entities;
 using Domain.Interfaces.Interfaceservices;
+using Domain.Interfaces.InterfacesRepositories;
 using Domain.Notifications;
 
 namespace Services
 {
-    public class ContributionService(IContributionService contributionService) : IContributionService
+    public class ContributionService : IContributionService
     {
-        private readonly IContributionService _contributionService = contributionService;
+        private readonly IContributionRepository _contributionRepository;
+        private readonly IUserService _userService;
+        private readonly IPurchaseService _purchaseService;
+
+        public ContributionService(IContributionRepository contributionRepository, IUserService userService, IPurchaseService purchaseService)
+        {
+            _contributionRepository = contributionRepository;
+            _userService = userService;
+            _purchaseService = purchaseService;
+        }
 
         public async Task<Notifies> AddContribution(Contribution contribution)
         {
@@ -14,21 +24,36 @@ namespace Services
             if (validateContribution.Status == false)
                 return validateContribution;
 
-            return await _contributionService.AddContribution(contribution);
+            var purchase = await _purchaseService.GetPurchaseById(contribution.PurchaseId);
+            if (purchase == null)
+                return Notifies.Error("Purchase not found");
+
+            var user = await _userService.GetUserById(purchase.ClientId);
+            if (user == null)
+                return Notifies.Error("User not found");
+
+
+            if (!purchase.IsApproved)
+                return Notifies.Error("Purchase not approved");
+
+            if (user.WalletBalance < contribution.Amount)
+                return Notifies.Error("Insufficient funds");
+
+            return await _contributionRepository.Add(contribution);
         }
 
         public async Task<Notifies> DeleteContribution(int contributionId)
         {
-            var entitie = await _contributionService.GetContributionById(contributionId);
+            var entitie = await GetContributionById(contributionId);
             if (entitie == null)
                 return Notifies.Error("Contribution not found");
 
-            return await _contributionService.DeleteContribution(contributionId);
+            return await _contributionRepository.Delete(entitie);
         }
 
         public async Task<List<Contribution>> GetAllContributions()
         {
-            return await _contributionService.GetAllContributions();
+            return await _contributionRepository.GetAll();
         }
 
         public async Task<Contribution?> GetContributionById(int id)
@@ -37,7 +62,7 @@ namespace Services
             if (validateId.Status == false)
                 return null;
 
-            return await _contributionService.GetContributionById(id);
+            return await _contributionRepository.GetById(id);
         }
 
         public async Task<Notifies> UpdateContribution(Contribution contribution)
@@ -46,7 +71,15 @@ namespace Services
             if (validateContribution.Status == false)
                 return validateContribution;
 
-            return await _contributionService.UpdateContribution(contribution);
+            var purchase = await _purchaseService.GetPurchaseById(contribution.PurchaseId);
+            if (purchase == null)
+                return Notifies.Error("Purchase not found");
+
+            var user = await _userService.GetUserById(purchase.ClientId);
+            if (user.WalletBalance < contribution.Amount)
+                return Notifies.Error("Insufficient funds");
+
+            return await _contributionRepository.Update(contribution);
         }
 
         public Notifies ValidateContribution(Contribution contribution)

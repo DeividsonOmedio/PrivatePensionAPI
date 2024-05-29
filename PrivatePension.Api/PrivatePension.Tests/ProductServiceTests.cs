@@ -1,259 +1,344 @@
-﻿using Domain.Entities;
+﻿using Bogus;
+using Domain.Entities;
+using Domain.Interfaces.Interfaceservices;
+using Domain.Interfaces.InterfacesRepositories;
+using Domain.Notifications;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Services;
 
 namespace PrivatePension.Tests
 {
     public class ProductServiceTests
     {
-        [Fact]
-        public void CreateProduct_ShouldAddProduct()
+        private readonly Mock<IProductRepository> _productRepositoryMock;
+        private readonly Mock<IUserService> _userServiceMock;
+        private readonly Mock<IPurchaseService> _purchaseServiceMock;
+        private readonly ProductService _productService;
+
+        public ProductServiceTests()
         {
-            // Arrange
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = 100m , Description = "teste", Available = true};
-
-            // Act
-            productService.CreateProductAsync(newProduct);
-
-            // Assert
-            productRepositoryMock.Verify(r => r.AddAsync(newProduct), Times.Once);
+            _productRepositoryMock = new Mock<IProductRepository>();
+            _userServiceMock = new Mock<IUserService>();
+            _purchaseServiceMock = new Mock<IPurchaseService>();
+            _productService = new ProductService(_productRepositoryMock.Object, _userServiceMock.Object, _purchaseServiceMock.Object);
         }
 
-        //criar produto mas com nome vazio e nao adicionar
         [Fact]
-        public void CreateProduct_ShouldNotAddProductWithEmptyName()
+        public async Task AddProduct_ShouldAddProduct()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "", Price = 100m, Description = "teste", Available = true };
+            var newProduct = new Faker<Product>()
+                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                .RuleFor(p => p.Available, f => f.Random.Bool())
+                .Generate();
 
-            productService.CreateProductAsync(newProduct);
+            _productRepositoryMock.Setup(r => r.Add(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productRepositoryMock.Verify(r => r.AddAsync(newProduct), Times.Never);
+            var result = await _productService.AddProduct(newProduct);
+
+            _productRepositoryMock.Verify(r => r.Add(newProduct), Times.Once);
+            Assert.True(result.Status);
         }
 
-        //criar produto mas com preco negativo e nao adicionar
         [Fact]
-        public void CreateProduct_ShouldNotAddProductWithNegativePrice()
+        public async Task AddProduct_ShouldNotAddProductWithEmptyName()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = -100m, Description = "teste", Available = true };
+            var newProduct = new Faker<Product>()
+                           .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                           .RuleFor(p => p.Name, f => string.Empty)
+                           .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                           .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                           .RuleFor(p => p.Available, f => f.Random.Bool())
+                           .Generate();
+            var result = await _productService.AddProduct(newProduct);
 
-            productService.CreateProductAsync(newProduct);
-
-            productRepositoryMock.Verify(r => r.AddAsync(newProduct), Times.Never);
+            _productRepositoryMock.Verify(r => r.Add(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //criar produto mas com preco zero e nao adicionar
         [Fact]
-        public void CreateProduct_ShouldNotAddProductWithZeroPrice()
+        public async Task AddProduct_ShouldNotAddProductWithNegativePrice()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = 0, Description = "teste", Available = true };
+            var newProduct = new Faker<Product>()
+                           .RuleFor(p => p.Id, f => f.Random.Int(1, 100))
+                           .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                           .RuleFor(p => p.Price, f => f.Random.Decimal(-1000, 0))
+                           .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                           .RuleFor(p => p.Available, f => f.Random.Bool())
+                           .Generate();
+            var result = await _productService.AddProduct(newProduct);
 
-            productService.CreateProductAsync(newProduct);
-
-            productRepositoryMock.Verify(r => r.AddAsync(newProduct), Times.Never);
+            _productRepositoryMock.Verify(r => r.Add(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //criar produto mas com descricao vazia e nao adicionar
         [Fact]
-        public void CreateProduct_ShouldNotAddProductWithEmptyDescription()
+        public async Task AddProduct_ShouldNotAddProductWithZeroPrice()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = 100m, Description = "", Available = true };
+            var newProduct = new Faker<Product>()
+                           .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                           .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                           .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                           .RuleFor(p => p.Available, f => f.Random.Bool())
+                           .Generate();
+            newProduct.Price = 0;
+            var result = await _productService.AddProduct(newProduct);
 
-            productService.CreateProductAsync(newProduct);
-
-            productRepositoryMock.Verify(r => r.AddAsync(newProduct), Times.Never);
+            _productRepositoryMock.Verify(r => r.Add(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //update produto e adicionar
         [Fact]
-        public void UpdateProduct_ShouldUpdateProduct()
+        public async Task AddProduct_ShouldNotAddProductWithEmptyDescription()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = 100m, Description = "teste", Available = true };
+            var newProduct = new Faker<Product>()
+                           .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                           .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                           .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                           .RuleFor(p => p.Available, f => f.Random.Bool())
+                           .Generate();
+            var result = await _productService.AddProduct(newProduct);
 
-            productService.UpdateProductAsync(newProduct);
-
-            productRepositoryMock.Verify(r => r.UpdateAsync(newProduct), Times.Once);
+            _productRepositoryMock.Verify(r => r.Add(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //update produto mas com nome vazio e nao adicionar
         [Fact]
-        public void UpdateProduct_ShouldNotUpdateProductWithEmptyName()
+        public async Task UpdateProduct_ShouldUpdateProduct()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "", Price = 100m, Description = "teste", Available = true };
+            var existingProduct = new Faker<Product>()
+                           .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                           .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                           .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                           .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                           .RuleFor(p => p.Available, f => f.Random.Bool())
+                           .Generate();
+            _productRepositoryMock.Setup(r => r.Update(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productService.UpdateProductAsync(newProduct);
+            var result = await _productService.UpdateProduct(existingProduct);
 
-            productRepositoryMock.Verify(r => r.UpdateAsync(newProduct), Times.Never);
+            _productRepositoryMock.Verify(r => r.Update(existingProduct), Times.Once);
+            Assert.True(result.Status);
         }
 
-        //update produto mas com preco negativo e nao adicionar
         [Fact]
-        public void UpdateProduct_ShouldNotUpdateProductWithNegativePrice()
+        public async Task UpdateProduct_ShouldNotUpdateProductWithEmptyName()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = -100m, Description = "teste", Available = true };
+            var existingProduct = new Faker<Product>()
+                                      .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                                      .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                                      .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                                      .RuleFor(p => p.Available, f => f.Random.Bool())
+                                      .Generate();
+            _productRepositoryMock.Setup(r => r.Update(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productService.UpdateProductAsync(newProduct);
+            var result = await _productService.UpdateProduct(existingProduct);
 
-            productRepositoryMock.Verify(r => r.UpdateAsync(newProduct), Times.Never);
+            _productRepositoryMock.Verify(r => r.Update(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //update produto mas com preco zero e nao adicionar
         [Fact]
-        public void UpdateProduct_ShouldNotUpdateProductWithZeroPrice()
+        public async Task UpdateProduct_ShouldNotUpdateProductWithNegativePrice()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = 0, Description = "teste", Available = true };
+            var existingProduct = new Faker<Product>()
+                                      .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                                      .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                                      .RuleFor(p => p.Price, f => f.Random.Decimal(-1000, -1))
+                                      .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                                      .RuleFor(p => p.Available, f => f.Random.Bool())
+                                      .Generate();
+            _productRepositoryMock.Setup(r => r.Update(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productService.UpdateProductAsync(newProduct);
+            var result = await _productService.UpdateProduct(existingProduct);
 
-            productRepositoryMock.Verify(r => r.UpdateAsync(newProduct), Times.Never);
+            _productRepositoryMock.Verify(r => r.Update(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //update produto mas com descricao vazia e nao adicionar
         [Fact]
-        public void UpdateProduct_ShouldNotUpdateProductWithEmptyDescription()
+        public async Task UpdateProduct_ShouldNotUpdateProductWithZeroPrice()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = 100m, Description = "", Available = true };
+            var existingProduct = new Faker<Product>()
+                                      .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                                      .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                                      .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                                      .RuleFor(p => p.Available, f => f.Random.Bool())
+                                      .Generate();
+            existingProduct.Price = 0;
+            _productRepositoryMock.Setup(r => r.Update(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productService.UpdateProductAsync(newProduct);
+            var result = await _productService.UpdateProduct(existingProduct);
 
-            productRepositoryMock.Verify(r => r.UpdateAsync(newProduct), Times.Never);
+            _productRepositoryMock.Verify(r => r.Update(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //delete produto e adicionar
         [Fact]
-        public void DeleteProduct_ShouldDeleteProduct()
+        public async Task UpdateProduct_ShouldNotUpdateProductWithEmptyDescription()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var newProduct = new Product { Id = 1, Name = "Produto A", Price = 100m, Description = "teste", Available = true };
+            var existingProduct = new Faker<Product>()
+                                      .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                                      .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                                      .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                                      .RuleFor(p => p.Available, f => f.Random.Bool())
+                                      .Generate();
+            _productRepositoryMock.Setup(r => r.Update(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productService.DeleteProductAsync(newProduct);
+            var result = await _productService.UpdateProduct(existingProduct);
 
-            productRepositoryMock.Verify(r => r.DeleteAsync(newProduct), Times.Once);
+            _productRepositoryMock.Verify(r => r.Update(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //delete produto by id e dar certo
         [Fact]
-        public void DeleteProductById_ShouldDeleteProduct()
+        public async Task DeleteProduct_ShouldDeleteProduct()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var id = 1;
+            var existingProduct = new Faker<Product>()
+                                      .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                                      .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                                      .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                                      .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                                      .RuleFor(p => p.Available, f => f.Random.Bool())
+                                      .Generate();
+            _productRepositoryMock.Setup(r => r.Update(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productService.DeleteProductByIdAsync(id);
+            _productRepositoryMock.Setup(r => r.GetById(existingProduct.Id)).ReturnsAsync(existingProduct);
+            _productRepositoryMock.Setup(r => r.Delete(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productRepositoryMock.Verify(r => r.DeleteAsync(id), Times.Once);
+            var result = await _productService.DeleteProduct(existingProduct.Id);
+
+            _productRepositoryMock.Verify(r => r.Delete(existingProduct), Times.Once);
+            Assert.True(result.Status);
         }
 
-        //delete produto by id e id não existente
         [Fact]
-        public void DeleteProductById_ShouldNotDeleteProductWithNonExistentId()
+        public async Task DeleteProductById_ShouldDeleteProduct()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var id = 1;
+            var productId = 1;
+            var existingProduct = new Faker<Product>()
+                                      .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                                      .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                                      .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                                      .RuleFor(p => p.Available, f => f.Random.Bool())
+                                      .Generate();
+            existingProduct.Id = productId;
+            _productRepositoryMock.Setup(r => r.Update(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productService.DeleteProductByIdAsync(id);
+            _productRepositoryMock.Setup(r => r.GetById(productId)).ReturnsAsync(existingProduct);
+            _productRepositoryMock.Setup(r => r.Delete(It.IsAny<Product>())).ReturnsAsync(Notifies.Success());
 
-            productRepositoryMock.Verify(r => r.DeleteAsync(id), Times.Never);
+            var result = await _productService.DeleteProduct(productId);
+
+            _productRepositoryMock.Verify(r => r.Delete(existingProduct), Times.Once);
+            Assert.True(result.Status);
         }
 
-        //get produto by id e dar certo
         [Fact]
-        public void GetProductById_ShouldGetProduct()
+        public async Task DeleteProductById_ShouldNotDeleteProductWithNonExistentId()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var id = 1;
+            var productId = 1;
 
-            productService.GetProductByIdAsync(id);
+            _productRepositoryMock.Setup(r => r.GetById(productId)).ReturnsAsync((Product)null);
 
-            productRepositoryMock.Verify(r => r.GetByIdAsync(id), Times.Once);
+            var result = await _productService.DeleteProduct(productId);
+
+            _productRepositoryMock.Verify(r => r.Delete(It.IsAny<Product>()), Times.Never);
+            Assert.False(result.Status);
         }
 
-        //get produto by id e id não existente
         [Fact]
-        public void GetProductById_ShouldNotGetProductWithNonExistentId()
+        public async Task GetProductById_ShouldGetProduct()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
-            var id = 1;
+            var productId = 1;
+            var existingProduct = new Faker<Product>()
+                                                  .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                                                  .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                                                  .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                                                  .RuleFor(p => p.Available, f => f.Random.Bool())
+                                                  .Generate();
+            existingProduct.Id = productId;
+            _productRepositoryMock.Setup(r => r.GetById(productId)).ReturnsAsync(existingProduct);
 
-            productService.GetProductByIdAsync(id);
+            var result = await _productService.GetProductById(productId);
 
-            productRepositoryMock.Verify(r => r.GetByIdAsync(id), Times.Never);
+            _productRepositoryMock.Verify(r => r.GetById(productId), Times.Once);
+            Assert.NotNull(result);
         }
 
-        //get todos os produtos e dar certo
         [Fact]
-        public void GetAllProducts_ShouldGetAllProducts()
+        public async Task GetProductById_ShouldNotGetProductWithNonExistentId()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
+            var productId = 1;
 
-            productService.GetAllProductsAsync();
+            _productRepositoryMock.Setup(r => r.GetById(productId)).ReturnsAsync((Product)null);
 
-            productRepositoryMock.Verify(r => r.GetAllAsync(), Times.Once);
+            var result = await _productService.GetProductById(productId);
+
+            _productRepositoryMock.Verify(r => r.GetById(productId), Times.Once);
+            Assert.Null(result);
         }
 
-        //get todos os produtos e não existir nenhum
         [Fact]
-        public void GetAllProducts_ShouldNotGetAllProductsIfThereAreNone()
+        public async Task GetAllProducts_ShouldGetAllProducts()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
+            var products = new Faker<Product>()
+                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                .RuleFor(p => p.Available, f => f.Random.Bool())
+                .Generate(5);
 
-            productService.GetAllProductsAsync();
+            _productRepositoryMock.Setup(r => r.GetAll()).ReturnsAsync(products);
 
-            productRepositoryMock.Verify(r => r.GetAllAsync(), Times.Never);
+            var result = await _productService.GetAllProducts();
+
+            _productRepositoryMock.Verify(r => r.GetAll(), Times.Once);
+            Assert.Equal(5, result.Count);
         }
 
-        //get todos os produtos disponiveis e dar certo
         [Fact]
-        public void GetAvailableProducts_ShouldGetAvailableProducts()
+        public async Task GetAllProducts_ShouldReturnEmptyListIfNoProducts()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
+            _productRepositoryMock.Setup(r => r.GetAll()).ReturnsAsync(new List<Product>());
 
-            productService.GetAvailableProductsAsync();
+            var result = await _productService.GetAllProducts();
 
-            productRepositoryMock.Verify(r => r.GetAvailableProductsAsync(), Times.Once);
+            _productRepositoryMock.Verify(r => r.GetAll(), Times.Once);
+            Assert.Empty(result);
         }
 
-        //get todos os produtos disponiveis e não existir nenhum
         [Fact]
-        public void GetAvailableProducts_ShouldNotGetAvailableProductsIfThereAreNone()
+        public async Task GetByAvailable_ShouldGetAvailableProducts()
         {
-            var productRepositoryMock = new Mock<IProductRepository>();
-            var productService = new ProductService(productRepositoryMock.Object);
+            var products = new Faker<Product>()
+                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                .RuleFor(p => p.Price, f => f.Random.Decimal(1, 1000))
+                .RuleFor(p => p.Description, f => f.Lorem.Sentence())
+                .RuleFor(p => p.Available, true)
+                .Generate(5);
 
-            productService.GetAvailableProductsAsync();
+            _productRepositoryMock.Setup(r => r.GetByAvailable(true)).ReturnsAsync(products);
 
-            productRepositoryMock.Verify(r => r.GetAvailableProductsAsync(), Times.Never);
+            var result = await _productService.GetByAvailable(true);
+
+            _productRepositoryMock.Verify(r => r.GetByAvailable(true), Times.Once);
+            Assert.Equal(5, result.Count);
         }
 
+        [Fact]
+        public async Task GetByAvailable_ShouldReturnEmptyListIfNoProductsAvailable()
+        {
+            _productRepositoryMock.Setup(r => r.GetByAvailable(true)).ReturnsAsync(new List<Product>());
+
+            var result = await _productService.GetByAvailable(true);
+
+            _productRepositoryMock.Verify(r => r.GetByAvailable(true), Times.Once);
+            Assert.Empty(result);
+        }
     }
 }
