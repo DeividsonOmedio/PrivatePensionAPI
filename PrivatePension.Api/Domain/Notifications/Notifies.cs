@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace Domain.Notifications
 {
@@ -25,10 +21,35 @@ namespace Domain.Notifications
             return new Notifies(true, message);
         }
 
+        public static Notifies Error(string message = "")
+        {
+            return new Notifies(false, message);
+        }
+
+
         public static Notifies Failure(string message)
         {
             return new Notifies(false, message);
         }
 
+        public static Notifies ValidatePropertyString(string value, string nameProperty)
+        {
+            if (string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(nameProperty))
+            {
+                return new Notifies(false, "Campo Obrigatório");
+            }
+
+            return new Notifies(true, "");
+        }
+
+        public static Notifies ValidatePropertyInt(int value, string nameProperty)
+        {
+            if (value < 1 || string.IsNullOrWhiteSpace(nameProperty))
+            {
+                return new Notifies(false, "Campo Obrigatório");
+            }
+
+            return new Notifies(true, "");
+        }
     }
 }
