@@ -26,11 +26,17 @@ namespace Domain.Notifications
             return new Notifies(false, message);
         }
 
+
+        public static Notifies Failure(string message)
+        {
+            return new Notifies(false, message);
+        }
+
         public static Notifies ValidatePropertyString(string value, string nameProperty)
         {
             if (string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(nameProperty))
             {
-                return new Notifies(false, $"Campo {nameProperty} Obrigatório");
+                return new Notifies(false, "Campo Obrigatório");
             }
 
             return new Notifies(true, "");
@@ -40,17 +46,7 @@ namespace Domain.Notifications
         {
             if (value < 1 || string.IsNullOrWhiteSpace(nameProperty))
             {
-                return new Notifies(false, $"Campo {nameProperty} Obrigatório e maior do que 0");
-            }
-
-            return new Notifies(true, "");
-        }
-
-        public static Notifies ValidatePropertyDecimal(decimal value, string nameProperty)
-        {
-            if (value <= 0M || string.IsNullOrWhiteSpace(nameProperty))
-            {
-                return new Notifies(false, $"Campo {nameProperty} Obrigatório e maior do que 0");
+                return new Notifies(false, "Campo Obrigatório");
             }
 
             return new Notifies(true, "");

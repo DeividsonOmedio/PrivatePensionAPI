@@ -8,26 +8,12 @@ namespace Infrastructure.Repository
     {
         public async Task<List<Product>> GetByAvailable(bool available)
         {
-            try
-            {
-                return await _dbSet.Where(product => product.Available == available).ToListAsync();
-            }
-            catch (Exception)
-            {
-                return [];
-            }
+            return await _dbSet.Where(product => product.Available == available).ToListAsync();
         }
 
         public async Task<Product?> GetByName(string name)
         {
-            try
-            {
-                return await _dbSet.FirstOrDefaultAsync(product => product.Name == name);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return await _dbSet.FirstOrDefaultAsync(product => product.Name == name);
         }
     }
 }

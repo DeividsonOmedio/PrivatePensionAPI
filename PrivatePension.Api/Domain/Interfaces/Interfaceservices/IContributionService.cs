@@ -12,8 +12,8 @@ namespace Domain.Interfaces.Interfaceservices
         Task<Notifies> AddContribution(Contribution contribution);
         Task<Notifies> UpdateContribution(Contribution contribution);
         Task<Notifies> DeleteContribution(int contributionId);
-        Task<Contribution?> GetContributionById(int id);
+        Task<Contribution> GetContributionById(int id);
         Task<List<Contribution>> GetAllContributions();
-        Notifies ValidateContribution(Contribution contribution);
+        Task<Notifies> ValidateContribution(Contribution contribution);
     }
 }
