@@ -10,6 +10,6 @@ namespace Domain.Interfaces.InterfacesRepositories
     public interface IProductRepository : IGenericRepository<Product>
     {
         Task<Product?> GetByName(string name);
-        Task<Product?> GetByAvailable(bool available);
+        Task<List<Product>> GetByAvailable(bool available);
     }
 }

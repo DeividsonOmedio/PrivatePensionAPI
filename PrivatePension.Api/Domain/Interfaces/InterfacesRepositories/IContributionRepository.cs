@@ -9,7 +9,7 @@ namespace Domain.Interfaces.InterfacesRepositories
 {
     public interface IContributionRepository : IGenericRepository<Contribution>
     {
-        Task<Contribution> GetByPurchaseId(int purchaseId);
+        Task<Contribution?> GetByPurchaseId(int purchaseId);
         Task<List<Contribution>> GetByUser(int userId);
         Task<List<Contribution>> GetByContributionDateByUser(DateTime contributionDate);
         Task<List<Contribution>> GetByContributionDate(DateTime contributionDate);

@@ -20,5 +20,10 @@ namespace Infrastructure.Repository
         {
             return await _dbSet.Where(purchase => purchase.Status == status).ToListAsync();
         }
+
+        public async Task<List<Purchase>> GetByUser(int user)
+        {
+            return await _dbSet.Where(purchase => purchase.ClientId == user).ToListAsync();
+        }
     }
 }
