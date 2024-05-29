@@ -8,7 +8,14 @@ namespace Infrastructure.Repository
     {
         public async Task<User?> GetByEmail(string email)
         {
-            return await _dbSet.FirstOrDefaultAsync(user => user.Email == email);
+            try
+            {
+                return await _dbSet.FirstOrDefaultAsync(user => user.Email == email);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
     }
 }

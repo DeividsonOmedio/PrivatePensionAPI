@@ -12,10 +12,10 @@ namespace Domain.Interfaces.Interfaceservices
         Task<Notifies> AddProduct(Product product);
         Task<Notifies> UpdateProduct(Product product);
         Task<Notifies> DeleteProduct(int productId);
-        Task<Product> GetProductById(int id);
+        Task<Product?> GetProductById(int id);
         Task<Product?> GetByName(string name);
         Task<List<Product>> GetAllProducts();
         Task<List<Product>> GetByAvailable(bool available);
-        Task<Notifies> ValidateProduct(Product product);
+        Notifies ValidateProduct(Product product);
     }
 }

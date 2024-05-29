@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Notifications;
 
@@ -17,6 +13,6 @@ namespace Domain.Interfaces.Interfaceservices
         Task<List<Purchase>> GetByProduct(int productId);
         Task<List<Purchase>> GetByDate(DateTime date);
         Task<List<Purchase>> GetByStatus(bool status);
-        Task<Notifies> ValidatePurchase(Purchase purchase);
+        Notifies ValidatePurchase(Purchase purchase);
     }
 }

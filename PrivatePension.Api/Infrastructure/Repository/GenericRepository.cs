@@ -11,33 +11,68 @@ namespace Infrastructure.Repository
 
         public async Task<Notifies> Add(T entity)
         {
-            await _dbSet.AddAsync(entity);
-            await _context.SaveChangesAsync();
-            return Notifies.Success();
+            try
+            {
+                await _dbSet.AddAsync(entity);
+                await _context.SaveChangesAsync();
+                return Notifies.Success();
+            }
+            catch (Exception ex)
+            {
+                return Notifies.Error(ex.Message);
+            }
         }
 
         public async Task<Notifies> Update(T entity)
         {
-            _dbSet.Update(entity);
-            await _context.SaveChangesAsync();
-            return Notifies.Success();
+            try
+            {
+                _dbSet.Update(entity);
+                await _context.SaveChangesAsync();
+                return Notifies.Success();
+            }
+            catch (Exception ex)
+            {
+                return Notifies.Error(ex.Message);
+            }
         }
 
         public async Task<Notifies> Delete(T entity)
         {
-            _dbSet.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Notifies.Success();
+            try
+            {
+                _dbSet.Remove(entity);
+                await _context.SaveChangesAsync();
+                return Notifies.Success();
+            }
+            catch (Exception ex)
+            {
+                return Notifies.Error(ex.Message);
+            }
         }
 
         public async Task<T?> GetById(int id)
         {
-            return await _dbSet.FindAsync(id);
+            try
+            {
+                return await _dbSet.FindAsync(id);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         public async Task<List<T>> GetAll()
         {
-            return await _dbSet.ToListAsync();
+            try
+            {
+                return await _dbSet.ToListAsync();
+            }
+            catch (Exception)
+            {
+                return new List<T>();
+            }
         }
     }
 }

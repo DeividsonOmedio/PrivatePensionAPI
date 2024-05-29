@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Notifications;
 
@@ -12,9 +8,9 @@ namespace Domain.Interfaces.Interfaceservices
         Task<Notifies> AddUser(User user);
         Task<Notifies> UpdateUser(User user);
         Task<Notifies> DeleteUser(int userId);
-        Task<User> GetUserById(int id);
+        Task<User?> GetUserById(int id);
         Task<List<User>> GetAllUsers();
-        Task<User> GetUserByEmail(string email);
-        Task<Notifies> ValidateUser(Product product);
+        Task<User?> GetUserByEmail(string email);
+        Notifies ValidateUser(User user);
     }
 }

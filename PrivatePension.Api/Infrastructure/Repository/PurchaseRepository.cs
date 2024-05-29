@@ -8,22 +8,50 @@ namespace Infrastructure.Repository
     {
         public async Task<List<Purchase>> GetByDate(DateTime date)
         {
-            return await _dbSet.Where(purchase => purchase.PurchaseDate == date).ToListAsync();
+            try
+            {
+                return await _dbSet.Where(purchase => purchase.PurchaseDate == date).ToListAsync();
+            }
+            catch (Exception)
+            {
+                return [];
+            }
         }
 
         public async Task<List<Purchase>> GetByProduct(int productId)
         {
-            return await _dbSet.Where(purchase => purchase.ProductId == productId).ToListAsync();
+            try
+            {
+                return await _dbSet.Where(purchase => purchase.ProductId == productId).ToListAsync();
+            }
+            catch (Exception)
+            {
+                return [];
+            }
         }
 
         public async Task<List<Purchase>> GetByStatus(bool status)
         {
-            return await _dbSet.Where(purchase => purchase.Status == status).ToListAsync();
+            try
+            {
+                return await _dbSet.Where(purchase => purchase.IsApproved == status).ToListAsync();
+            }
+            catch (Exception)
+            {
+                return [];
+            }
         }
 
         public async Task<List<Purchase>> GetByUser(int user)
         {
-            return await _dbSet.Where(purchase => purchase.ClientId == user).ToListAsync();
+            try
+            {
+                return await _dbSet.Where(purchase => purchase.ClientId == user).ToListAsync();
+            }
+            catch (Exception)
+            {
+                return [];
+            }
         }
     }
 }

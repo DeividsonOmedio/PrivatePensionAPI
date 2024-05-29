@@ -12,22 +12,50 @@ namespace Infrastructure.Repository
     {
         public async Task<List<Contribution>> GetByContributionDate(DateTime contributionDate)
         {
-            return await _dbSet.Where(contribution => contribution.ContributionDate == contributionDate).ToListAsync();
+            try
+            {
+                return await _dbSet.Where(contribution => contribution.ContributionDate == contributionDate).ToListAsync();
+            }
+            catch (Exception)
+            {
+                return [];
+            }
         }
 
         public async Task<List<Contribution>> GetByContributionDateByUser(DateTime contributionDate)
         {
-            return await _dbSet.Where(contribution => contribution.ContributionDate == contributionDate).ToListAsync();
+            try
+            {
+                return await _dbSet.Where(contribution => contribution.ContributionDate == contributionDate).ToListAsync();
+            }
+            catch (Exception)
+            {
+                return [];
+            }
         }
 
         public async Task<Contribution?> GetByPurchaseId(int purchaseId)
         {
-            return await _dbSet.FirstOrDefaultAsync(contribution => contribution.PurchaseId == purchaseId);
+            try
+            {
+                return await _dbSet.FirstOrDefaultAsync(contribution => contribution.PurchaseId == purchaseId);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         public async Task<List<Contribution>> GetByUser(int clientId)
         {
-            return await _dbSet.Where(contribution => contribution.Purchase.ClientId == clientId).ToListAsync();
+            try
+            {
+                return await _dbSet.Where(contribution => contribution.Purchase.ClientId == clientId).ToListAsync();
+            }
+            catch (Exception)
+            {
+                return [];
+            }
         }
     }
 }
