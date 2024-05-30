@@ -1,12 +1,13 @@
 ﻿using Domain.Interfaces.InterfacesRepositories;
 using Domain.Notifications;
+using Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository
 {
-    public class GenericRepository<T>(DbContext context) : IGenericRepository<T> where T : class
+    public class GenericRepository<T>(ContextBase context) : IGenericRepository<T> where T : class
     {
-        protected readonly DbContext _context = context;
+        protected readonly ContextBase _context = context;
         protected readonly DbSet<T> _dbSet = context.Set<T>();
 
         public async Task<Notifies> Add(T entity)

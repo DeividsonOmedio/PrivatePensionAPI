@@ -4,20 +4,21 @@ using System.Linq;
 using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Interfaces.InterfacesRepositories;
+using Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository
 {
-    public class ContributionRepository(DbContext context) : GenericRepository<Contribution>(context), IContributionRepository
+    public class ContributionRepository(ContextBase context) : GenericRepository<Contribution>(context), IContributionRepository
     {
         public async Task<List<Contribution>> GetByContributionDate(DateTime contributionDate)
         {
             return await _dbSet.Where(contribution => contribution.ContributionDate == contributionDate).ToListAsync();
         }
 
-        public async Task<List<Contribution>> GetByContributionDateByUser(DateTime contributionDate)
+        public async Task<List<Contribution>> GetByContributionDateByUser(DateTime contributionDate, int userId)
         {
-            return await _dbSet.Where(contribution => contribution.ContributionDate == contributionDate).ToListAsync();
+            return await _dbSet.Where(contribution => contribution.ContributionDate == contributionDate && contribution.Purchase.ClientId == userId).ToListAsync();
         }
 
         public async Task<Contribution?> GetByPurchaseId(int purchaseId)

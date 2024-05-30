@@ -56,6 +56,26 @@ namespace Services
             return await _contributionRepository.GetAll();
         }
 
+        public async Task<List<Contribution>> GetByContributionDate(DateTime contributionDate)
+        {
+            return await _contributionRepository.GetByContributionDate(contributionDate);
+        }
+
+        public async Task<List<Contribution>> GetByContributionDateByUser(DateTime contributionDate, int userId)
+        {
+            return await _contributionRepository.GetByContributionDateByUser(contributionDate, userId);
+        }
+
+        public async Task<Contribution?> GetByPurchaseId(int purchaseId)
+        {
+            return await _contributionRepository.GetByPurchaseId(purchaseId);
+        }
+
+        public async Task<List<Contribution>> GetByUser(int clientId)
+        {
+            return await _contributionRepository.GetByUser(clientId);
+        }
+
         public async Task<Contribution?> GetContributionById(int id)
         {
             var validateId = Notifies.ValidatePropertyInt(id, "ContributionId");

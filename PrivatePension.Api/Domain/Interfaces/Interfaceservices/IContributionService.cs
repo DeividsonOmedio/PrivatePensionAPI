@@ -14,6 +14,10 @@ namespace Domain.Interfaces.Interfaceservices
         Task<Notifies> DeleteContribution(int contributionId);
         Task<Contribution?> GetContributionById(int id);
         Task<List<Contribution>> GetAllContributions();
+        Task<List<Contribution>> GetByContributionDate(DateTime contributionDate);
+        Task<List<Contribution>> GetByContributionDateByUser(DateTime contributionDate, int userId);
+        Task<List<Contribution>> GetByUser(int userId);
+        Task<Contribution?> GetByPurchaseId(int purchaseId);
         Notifies ValidateContribution(Contribution contribution);
     }
 }

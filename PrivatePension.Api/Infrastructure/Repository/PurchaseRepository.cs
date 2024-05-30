@@ -1,10 +1,11 @@
 using Domain.Entities;
 using Domain.Interfaces.InterfacesRepositories;
+using Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository
 {
-    public class PurchaseRepository(DbContext context) : GenericRepository<Purchase>(context), IPurchaseRepository
+    public class PurchaseRepository(ContextBase context) : GenericRepository<Purchase>(context), IPurchaseRepository
     {
         public async Task<List<Purchase>> GetByDate(DateTime date)
         {

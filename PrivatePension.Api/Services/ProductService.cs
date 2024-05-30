@@ -9,13 +9,13 @@ namespace Services
     {
         private readonly IProductRepository _productRepository;
         private readonly IUserService _userService;
-        private readonly IPurchaseService _purchaseService;
+        //private readonly IPurchaseService _purchaseService;
 
-        public ProductService(IProductRepository productRepository, IUserService userService, IPurchaseService purchaseService)
+        public ProductService(IProductRepository productRepository, IUserService userService)
         {
             _productRepository = productRepository;
             _userService = userService;
-            _purchaseService = purchaseService;
+            //_purchaseService = purchaseService;
         }
 
         public async Task<Notifies> AddProduct(Product product)
@@ -74,20 +74,20 @@ namespace Services
             return await _productRepository.GetById(id);
         }
 
-        public async Task<List<Product>> GetProductsByUserNotPurchase(int userId)
-        {
-           var user = await _userService.GetUserById(userId);
-           if (user == null)
-                return null;
+        //public async Task<List<Product>> GetProductsByUserNotPurchase(int userId)
+        //{
+        //   var user = await _userService.GetUserById(userId);
+        //   if (user == null)
+        //        return null;
 
-            var purchases = await _purchaseService.GetByUser(userId);
-            var purchasedProductIds = purchases.Select(p => p.ProductId).ToList();
+        //    //var purchases = await _purchaseService.GetByUser(userId);
+        //    var purchasedProductIds = purchases.Select(p => p.ProductId).ToList();
 
-            var allProducts = await GetAllProducts();
-            var productsNotPurchased = allProducts.Where(p => !purchasedProductIds.Contains(p.Id)).ToList();
+        //    var allProducts = await GetAllProducts();
+        //    var productsNotPurchased = allProducts.Where(p => !purchasedProductIds.Contains(p.Id)).ToList();
 
-            return productsNotPurchased;
-        }
+        //    return productsNotPurchased;
+        //}
 
         public Notifies ValidateProduct(Product product)
         {

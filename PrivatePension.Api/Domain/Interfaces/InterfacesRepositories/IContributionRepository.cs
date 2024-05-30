@@ -11,7 +11,7 @@ namespace Domain.Interfaces.InterfacesRepositories
     {
         Task<Contribution?> GetByPurchaseId(int purchaseId);
         Task<List<Contribution>> GetByUser(int userId);
-        Task<List<Contribution>> GetByContributionDateByUser(DateTime contributionDate);
+        Task<List<Contribution>> GetByContributionDateByUser(DateTime contributionDate, int userId);
         Task<List<Contribution>> GetByContributionDate(DateTime contributionDate);
 
 

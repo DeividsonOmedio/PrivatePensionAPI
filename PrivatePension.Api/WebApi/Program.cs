@@ -6,7 +6,7 @@ using Infrastructure.Repository;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Services;
-using System.Globalization;
+using Services.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,10 +18,18 @@ services.AddDbContext<ContextBase>(options =>
     options.UseSqlServer(connectionString, b => b.MigrationsAssembly("Infrastructure"));
 });
 
+services.AddAutoMapper(typeof(MappingProfile));
+
 services.AddScoped<PasswordHasherService>();
 services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 services.AddScoped<IUserService, UserService>();
 services.AddScoped<IUserRepository, UserRepository>();
+services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+services.AddScoped<IPurchaseService, PurchaseService>();
+services.AddScoped<IProductRepository, ProductRepository>();
+services.AddScoped<IProductService, ProductService>();
+services.AddScoped<IContributionRepository, ContributionRepository>();
+services.AddScoped<IContributionService, ContributionService>();
 
 
 

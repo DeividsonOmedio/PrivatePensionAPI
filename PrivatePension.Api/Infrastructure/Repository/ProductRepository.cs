@@ -1,10 +1,11 @@
 using Domain.Entities;
 using Domain.Interfaces.InterfacesRepositories;
+using Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository
 {
-    public class ProductRepository(DbContext context) : GenericRepository<Product>(context), IProductRepository
+    public class ProductRepository(ContextBase context) : GenericRepository<Product>(context), IProductRepository
     {
         public async Task<List<Product>> GetByAvailable(bool available)
         {
