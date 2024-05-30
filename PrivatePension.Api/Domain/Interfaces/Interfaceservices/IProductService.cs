@@ -13,6 +13,8 @@ namespace Domain.Interfaces.Interfaceservices
         Task<Notifies> UpdateProduct(Product product);
         Task<Notifies> DeleteProduct(int productId);
         Task<Product?> GetProductById(int id);
+        Task<List<Product>> GetProductsPurchasedByUser(int userId);
+        Task<List<Product>> GetProductsNotPurchasedByUser(int userId);
         Task<Product?> GetByName(string name);
         Task<List<Product>> GetAllProducts();
         Task<List<Product>> GetByAvailable(bool available);

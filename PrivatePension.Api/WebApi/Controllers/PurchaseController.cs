@@ -1,6 +1,9 @@
-﻿using Domain.Entities;
+﻿using AutoMapper;
+using Domain.Entities;
 using Domain.Interfaces.Interfaceservices;
 using Microsoft.AspNetCore.Mvc;
+using Services;
+using Services.DTOs;
 
 namespace WebApi.Controllers
 {
@@ -9,88 +12,34 @@ namespace WebApi.Controllers
     public class PurchaseController : ControllerBase
     {
         private readonly IPurchaseService _purchaseService;
+        private readonly IMapper _mapper;
 
-        public PurchaseController(IPurchaseService purchaseService)
+        public PurchaseController(IPurchaseService purchaseService, IMapper mapper)
         {
             _purchaseService = purchaseService;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Purchase>>> GetAllPurchases()
-        {
-            var purchases = await _purchaseService.GetAllPurchases();
-            return Ok(purchases);
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Purchase>> GetPurchaseById(int id)
-        {
-            var purchase = await _purchaseService.GetPurchaseById(id);
-            if (purchase == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(purchase);
-        }
-
-        [HttpGet("GetByApproved/isApproved")]
-        public async Task<ActionResult<IEnumerable<Purchase>>> GetByApproved()
-        {
-            var purchases = await _purchaseService.GetByStatus(true);
-            return Ok(purchases);
-        }
-
-        [HttpGet("GetByApproved/notApproved")]
-        public async Task<ActionResult<IEnumerable<Purchase>>> GetNotApproved()
-        {
-            var purchases = await _purchaseService.GetByStatus(false);
-            return Ok(purchases);
-        }
-
-        [HttpGet("GetByClient/{clientId}")]
-        public async Task<ActionResult<IEnumerable<Purchase>>> GetByClient(int clientId)
-        {
-            var purchases = await _purchaseService.GetByUser(clientId);
-            return Ok(purchases);
-        }
-
-        [HttpGet("GetByDate/{date}")]
-        public async Task<ActionResult<IEnumerable<Purchase>>> GetByDate(DateTime date)
-        {
-            var purchases = await _purchaseService.GetByDate(date);
-            return Ok(purchases);
-        }
-
-        [HttpGet("GetByProduct/{productId}")]
-        public async Task<ActionResult<IEnumerable<Purchase>>> GetByProduct(int productId)
-        {
-            var purchases = await _purchaseService.GetByProduct(productId);
-            return Ok(purchases);
+            _mapper = mapper;
         }
 
         [HttpPost]
-        public async Task<ActionResult<Purchase>> CreatePurchase(Purchase purchase)
+        public async Task<ActionResult<Purchase>> CreatePurchase(PurchaseDTO purchaseDto)
         {
+            var purchase = _mapper.Map<Purchase>(purchaseDto);
             var result = await _purchaseService.AddPurchase(purchase);
             if (!result.Status == true)
-            {
                 return BadRequest(result);
-            }
 
-            return CreatedAtAction(nameof(GetPurchaseById), new { id = purchase.Id }, purchase);
+            purchaseDto.IsApproved = false;
+            return CreatedAtAction(nameof(GetPurchaseById), new { id = purchaseDto.Id}, purchaseDto);
         }
 
-        [HttpPut("{id}/approve")]
+        [HttpPatch("/approve/{id}")]
         public async Task<IActionResult> ApprovePurchase(int id)
         {
             var result = await _purchaseService.UpdatePurchaseIsApproved(id);
             if (!result.Status == true)
-            {
                 return NotFound(result);
-            }
 
-            return NoContent();
+            return Ok(result);
         }
 
         [HttpDelete("{id}")]
@@ -102,7 +51,81 @@ namespace WebApi.Controllers
                 return NotFound(result);
             }
 
-            return NoContent();
+            return Ok(result);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetAllPurchases()
+        {
+            var purchases = await _purchaseService.GetAllPurchases();
+            var purchaseDtos = _mapper.Map<List<PurchaseDTO>>(purchases);
+            return Ok(purchaseDtos);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<PurchaseDTO>> GetPurchaseById(int id)
+        {
+            var purchase = await _purchaseService.GetPurchaseById(id);
+            if (purchase == null)
+                return NotFound();
+
+            var purchaseDto = _mapper.Map<PurchaseDTO>(purchase);
+            return Ok(purchaseDto);
+        }
+
+        [HttpGet("GetByApproved/isApproved")]
+        public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetByApproved()
+        {
+            var purchases = await _purchaseService.GetByStatus(true);
+            if (purchases == null)
+                return NotFound();
+
+            var purchaseDtos = _mapper.Map<List<PurchaseDTO>>(purchases);
+            return Ok(purchaseDtos);
+        }
+
+        [HttpGet("GetByApproved/notApproved")]
+        public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetNotApproved()
+        {
+            var purchases = await _purchaseService.GetByStatus(false);
+            if (purchases == null)
+                return NotFound();
+
+            var purchaseDtos = _mapper.Map<List<PurchaseDTO>>(purchases);
+            return Ok(purchaseDtos);
+        }
+
+        [HttpGet("GetByClient/{clientId}")]
+        public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetByClient(int clientId)
+        {
+            var purchases = await _purchaseService.GetByUser(clientId);
+            if (purchases == null)
+                return NotFound();
+
+            var purchaseDtos = _mapper.Map<List<PurchaseDTO>>(purchases);
+            return Ok(purchaseDtos);
+        }
+
+        [HttpGet("GetByDate/{date}")]
+        public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetByDate(DateTime date)
+        {
+            var purchases = await _purchaseService.GetByDate(date);
+            if (purchases == null)
+                return NotFound();
+
+            var purchaseDtos = _mapper.Map<List<PurchaseDTO>>(purchases);
+            return Ok(purchaseDtos);
+        }
+
+        [HttpGet("GetByProduct/{productId}")]
+        public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetByProduct(int productId)
+        {
+            var purchases = await _purchaseService.GetByProduct(productId);
+            if (purchases == null)
+                return NotFound();
+
+            var purchaseDtos = _mapper.Map<List<PurchaseDTO>>(purchases);
+            return Ok(purchaseDtos);
         }
     }
 }

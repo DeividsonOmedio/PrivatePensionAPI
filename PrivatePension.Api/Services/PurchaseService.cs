@@ -28,13 +28,27 @@ namespace Services
             var product = await _productService.GetProductById(purchase.ProductId);
             if (product == null)
                 return Notifies.Error("Product not found");
+            if(!product.Available)
+                return Notifies.Error("Product not available");
+            purchase.Product = product;
+
+            var purchaseExists = await GetByProductAndUser(purchase.ProductId, purchase.ClientId);
+            if (purchaseExists != null)
+                return Notifies.Error("Product already purchased");
 
             var user = await _userService.GetUserById(purchase.ClientId);
             if (user == null)
                 return Notifies.Error("User not found");
+            if (user.Role == Domain.Enums.UserRolesEnum.admin)
+                return Notifies.Error("Admins can't make purchases");
 
             if(user.WalletBalance < product.Price)
                 return Notifies.Error("Insufficient balance");
+            user.WalletBalance = user.WalletBalance - product.Price;
+            var UpdateUserWallet = await _userService.UpdateUser(user);
+            if (UpdateUserWallet.Status == false)
+                return Notifies.Error("Erro no servidor");
+            purchase.Client = user;
 
             purchase.PurchaseDate = DateTime.Now;
             purchase.IsApproved = false;
@@ -86,6 +100,15 @@ namespace Services
                 return new List<Purchase>();
 
             return await _purchaseRepository.GetByUser(userId);
+        }
+
+        public async Task<Purchase?> GetByProductAndUser(int productId, int userId)
+        {
+            var user = await _userService.GetUserById(userId);
+            if (user == null)
+                return null;
+
+            return await _purchaseRepository.GetByProductAndUser(productId ,userId);
         }
 
         public async Task<List<Purchase>> GetByDate(DateTime date)

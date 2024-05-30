@@ -9,6 +9,7 @@ namespace Services.Mappings
         public MappingProfile()
         {
             CreateMap<User, UserDto>().ReverseMap();
+            CreateMap<Product, ProductDto>().ReverseMap();
             CreateMap<Contribution, ContributionDto>().ReverseMap();
             CreateMap<Purchase, PurchaseDTO>().ReverseMap();
             CreateMap<Contribution, ContributionDto>().ReverseMap();

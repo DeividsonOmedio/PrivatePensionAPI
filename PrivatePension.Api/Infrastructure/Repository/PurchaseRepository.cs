@@ -26,5 +26,11 @@ namespace Infrastructure.Repository
         {
             return await _dbSet.Where(purchase => purchase.ClientId == user).ToListAsync();
         }
+
+        public async Task<Purchase?> GetByProductAndUser(int productId, int userId)
+        {
+            return await _dbSet.FirstOrDefaultAsync(purchase => purchase.ProductId == productId && purchase.ClientId == userId);
+        }
+
     }
 }

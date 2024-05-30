@@ -30,8 +30,7 @@ services.AddScoped<IProductRepository, ProductRepository>();
 services.AddScoped<IProductService, ProductService>();
 services.AddScoped<IContributionRepository, ContributionRepository>();
 services.AddScoped<IContributionService, ContributionService>();
-
-
+services.AddScoped<IComplexQueriesProductRepository, complexQueriesProductsRepository>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -27,17 +27,18 @@ namespace Services
             var purchase = await _purchaseService.GetPurchaseById(contribution.PurchaseId);
             if (purchase == null)
                 return Notifies.Error("Purchase not found");
+            if (!purchase.IsApproved)
+                return Notifies.Error("Purchase not approved");
 
             var user = await _userService.GetUserById(purchase.ClientId);
             if (user == null)
                 return Notifies.Error("User not found");
-
-
-            if (!purchase.IsApproved)
-                return Notifies.Error("Purchase not approved");
-
             if (user.WalletBalance < contribution.Amount)
                 return Notifies.Error("Insufficient funds");
+            user.WalletBalance = user.WalletBalance - contribution.Amount;
+            var UpdateUserWallet = await _userService.UpdateUser(user);
+            if (UpdateUserWallet.Status == false)
+                return Notifies.Error("Erro no servidor");
 
             return await _contributionRepository.Add(contribution);
         }

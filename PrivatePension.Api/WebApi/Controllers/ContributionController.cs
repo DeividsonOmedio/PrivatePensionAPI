@@ -1,6 +1,8 @@
-﻿using Domain.Entities;
+﻿using AutoMapper;
+using Domain.Entities;
 using Domain.Interfaces.Interfaceservices;
 using Microsoft.AspNetCore.Mvc;
+using Services.DTOs;
 
 namespace WebApi.Controllers
 {
@@ -9,22 +11,43 @@ namespace WebApi.Controllers
     public class ContributionController : ControllerBase
     {
         private readonly IContributionService _contributionService;
+        private readonly IMapper _mapper;
 
-        public ContributionController(IContributionService contributionService)
+        public ContributionController(IContributionService contributionService, IMapper mapper)
         {
             _contributionService = contributionService;
+            _mapper = mapper;
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddContribution(Contribution contribution)
+        public async Task<IActionResult> AddContribution(ContributionDto contributionDto)
         {
+            var contribution = _mapper.Map<Contribution>(contributionDto);
             var result = await _contributionService.AddContribution(contribution);
             if (!result.Status == true)
             {
                 return BadRequest(result.Message);
             }
 
-            return Ok("Contribution added successfully");
+            return Ok(result);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateContribution(int id, ContributionDto contributionDto)
+        {
+            if (id != contributionDto.Id)
+            {
+                return BadRequest("Invalid contribution ID");
+            }
+
+            var contribution = _mapper.Map<Contribution>(contributionDto);
+            var result = await _contributionService.UpdateContribution(contribution);
+            if (!result.Status == true)
+            {
+                return BadRequest(result.Message);
+            }
+
+            return Ok(result);
         }
 
         [HttpDelete("{id}")]
@@ -36,76 +59,72 @@ namespace WebApi.Controllers
                 return NotFound(result.Message);
             }
 
-            return Ok("Contribution deleted successfully");
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateContribution(int id, Contribution contribution)
-        {
-            if (id != contribution.Id)
-            {
-                return BadRequest("Invalid contribution ID");
-            }
-
-            var result = await _contributionService.UpdateContribution(contribution);
-            if (!result.Status == true)
-            {
-                return BadRequest(result.Message);
-            }
-
-            return Ok("Contribution updated successfully");
+            return Ok(result);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllContributions()
+        public async Task<ActionResult<IEnumerable<ContributionDto>>> GetAllContributions()
         {
             var contributions = await _contributionService.GetAllContributions();
-            return Ok(contributions);
+            var contributionDtos = _mapper.Map<IEnumerable<ContributionDto>>(contributions);
+            return Ok(contributionDtos);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetContributionById(int id)
+        public async Task<ActionResult<ContributionDto>> GetContributionById(int id)
         {
             var contribution = await _contributionService.GetContributionById(id);
             if (contribution == null)
             {
                 return NotFound("Contribution not found");
             }
+            var contributionDto = _mapper.Map<ContributionDto>(contribution);
 
-            return Ok(contribution);
+            return Ok(contributionDto);
         }
 
         [HttpGet("GetByContributionDate/{contributionDate}")]
-        public async Task<IActionResult> GetByContributionDate(DateTime contributionDate)
+        public async Task<ActionResult<IEnumerable<ContributionDto>>> GetByContributionDate(DateTime contributionDate)
         {
             var contributions = await _contributionService.GetByContributionDate(contributionDate);
-            return Ok(contributions);
+            if (contributions == null)
+                return NotFound("Contribution not found");
+
+            var contributionDtos = _mapper.Map<IEnumerable<ContributionDto>>(contributions);
+            return Ok(contributionDtos);
         }
 
         [HttpGet("GetByContributionDateByUser/{contributionDate}/{userId}")]
-        public async Task<IActionResult> GetByContributionDateByUser(DateTime contributionDate, int userId)
+        public async Task<ActionResult<IEnumerable<ContributionDto>>> GetByContributionDateByUser(DateTime contributionDate, int userId)
         {
             var contributions = await _contributionService.GetByContributionDateByUser(contributionDate, userId);
-            return Ok(contributions);
+            if (contributions == null)
+                return NotFound("Contribution not found");
+
+            var contributionDtos = _mapper.Map<IEnumerable<ContributionDto>>(contributions);
+            return Ok(contributionDtos);
         }
 
         [HttpGet("GetByPurchaseId/{purchaseId}")]
-        public async Task<IActionResult> GetByPurchaseId(int purchaseId)
+        public async Task<ActionResult<IEnumerable<ContributionDto>>> GetByPurchaseId(int purchaseId)
         {
             var contribution = await _contributionService.GetByPurchaseId(purchaseId);
             if (contribution == null)
-            {
                 return NotFound("Contribution not found");
-            }
 
-            return Ok(contribution);
+            var contributionDto = _mapper.Map<IEnumerable<ContributionDto>>(contribution);
+            return Ok(contributionDto);
         }
 
         [HttpGet("GetByUser/{userId}")]
-        public async Task<IActionResult> GetByUser(int userId)
+        public async Task<ActionResult<IEnumerable<ContributionDto>>> GetByUser(int userId)
         {
             var contributions = await _contributionService.GetByUser(userId);
-            return Ok(contributions);
+            if (contributions == null)
+                return NotFound("Contribution not found");
+
+            var contributionDtos = _mapper.Map<IEnumerable<ContributionDto>>(contributions);
+            return Ok(contributionDtos);
         }
     }
 }

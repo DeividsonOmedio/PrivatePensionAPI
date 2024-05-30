@@ -20,19 +20,18 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddUser(UserDto userDto)
+        public async Task<IActionResult> AddUser(User user)
         {
-            var user = _mapper.Map<User>(userDto);
             var result = await _userService.AddUser(user);
             if (result.Status == true)
-                return Ok(result);
+             return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+
             return BadRequest(result);
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateUser(UserDto userDto)
+        public async Task<IActionResult> UpdateUser(User user)
         {
-            var user = _mapper.Map<User>(userDto);
             var result = await _userService.UpdateUser(user);
             if (result.Status == true)
                 return Ok(result);
@@ -48,8 +47,8 @@ namespace WebApi.Controllers
             return NotFound(result);
         }
 
-        [HttpGet("GetAll")]
-        public async Task<IActionResult> GetAllUsers()
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsers()
         {
             var users = await _userService.GetAllUsers();
             var userDtos = _mapper.Map<List<UserDto>>(users);
