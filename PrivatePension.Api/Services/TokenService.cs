@@ -10,7 +10,7 @@ namespace Services
     {
         public static string GenerateJwtToken(User user)
         {
-            var key = Encoding.ASCII.GetBytes("your_secret_key_here");
+            var key = Encoding.ASCII.GetBytes(Helpers.Security.Key.Secret);
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var claims = new List<Claim>

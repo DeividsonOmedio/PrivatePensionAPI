@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces.Interfaceservices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.DTOs;
 
@@ -8,6 +9,7 @@ namespace WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "admin")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -33,6 +35,15 @@ namespace WebApi.Controllers
         public async Task<IActionResult> UpdateUser(User user)
         {
             var result = await _userService.UpdateUser(user);
+            if (result.Status == true)
+                return Ok(result);
+            return BadRequest(result);
+        }
+
+        [HttpPatch("UpdateWalletBalance/{id}")]
+        public async Task<IActionResult> UpdateBalance(int id, decimal value)
+        {
+            var result = await _userService.UpdateWalletBalance(id, value);
             if (result.Status == true)
                 return Ok(result);
             return BadRequest(result);

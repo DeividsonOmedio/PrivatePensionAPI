@@ -10,7 +10,7 @@ namespace Services.DTOs
 {
     public class PurchaseDTO
     {
-        public int Id { get; set; }
+        public int? Id { get; set; }
 
         public int ClientId { get; set; }
 

@@ -12,45 +12,39 @@ namespace Infrastructure.Repository
 {
     public class complexQueriesProductsRepository : IComplexQueriesProductRepository
     {
-        private readonly DbContextOptions<ContextBase> _context;
+        private readonly ContextBase _context;
 
-        public complexQueriesProductsRepository()
+        public complexQueriesProductsRepository(ContextBase context)
         {
-            _context = new DbContextOptions<ContextBase>();
+            _context = context;
         }
 
         public async Task<List<Product>> GetProductsPurchasedByUser(int userId)
         {
-            using (var banco = new ContextBase(_context))
-            {
-                var purchasedProductIds = await banco.Purchases
-                    .Where(purchase => purchase.ClientId == userId)
-                    .Select(purchase => purchase.ProductId)
-                    .ToListAsync();
+            var purchasedProductIds = await _context.Purchases
+                .Where(purchase => purchase.ClientId == userId)
+                .Select(purchase => purchase.ProductId)
+                .ToListAsync();
 
-                var productsPurchased = await banco.Products
-                    .Where(product => purchasedProductIds.Contains(product.Id))
-                    .ToListAsync();
+            var productsPurchased = await _context.Products
+                .Where(product => purchasedProductIds.Contains(product.Id))
+                .ToListAsync();
 
-                return productsPurchased;
-            }
+            return productsPurchased;
         }
 
         public async Task<List<Product>> GetProductsNotPurchasedByUser(int userId)
         {
-            using (var banco = new ContextBase(_context))
-            {
-                var purchasedProductIds = await banco.Purchases
-                    .Where(purchase => purchase.ClientId == userId)
-                    .Select(purchase => purchase.ProductId)
-                    .ToListAsync();
+            var purchasedProductIds = await _context.Purchases
+                .Where(purchase => purchase.ClientId == userId)
+                .Select(purchase => purchase.ProductId)
+                .ToListAsync();
 
-                var productsNotPurchased = await banco.Products
-                    .Where(product => !purchasedProductIds.Contains(product.Id))
-                    .ToListAsync();
+            var productsNotPurchased = await _context.Products
+                .Where(product => !purchasedProductIds.Contains(product.Id) && product.Available)
+                .ToListAsync();
 
-                return productsNotPurchased;
-            }
+            return productsNotPurchased;
         }
     }
 }

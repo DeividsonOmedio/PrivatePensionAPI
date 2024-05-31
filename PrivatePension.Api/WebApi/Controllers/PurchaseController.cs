@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces.Interfaceservices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 using Services.DTOs;
@@ -20,9 +21,11 @@ namespace WebApi.Controllers
             _mapper = mapper;
         }
 
+        [Authorize(Roles = "client")]
         [HttpPost]
         public async Task<ActionResult<Purchase>> CreatePurchase(PurchaseDTO purchaseDto)
         {
+            purchaseDto.Id = null;
             var purchase = _mapper.Map<Purchase>(purchaseDto);
             var result = await _purchaseService.AddPurchase(purchase);
             if (!result.Status == true)
@@ -32,6 +35,7 @@ namespace WebApi.Controllers
             return CreatedAtAction(nameof(GetPurchaseById), new { id = purchaseDto.Id}, purchaseDto);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpPatch("/approve/{id}")]
         public async Task<IActionResult> ApprovePurchase(int id)
         {
@@ -42,6 +46,7 @@ namespace WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePurchase(int id)
         {
@@ -54,6 +59,7 @@ namespace WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetAllPurchases()
         {
@@ -62,6 +68,7 @@ namespace WebApi.Controllers
             return Ok(purchaseDtos);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("{id}")]
         public async Task<ActionResult<PurchaseDTO>> GetPurchaseById(int id)
         {
@@ -73,6 +80,7 @@ namespace WebApi.Controllers
             return Ok(purchaseDto);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("GetByApproved/isApproved")]
         public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetByApproved()
         {
@@ -84,6 +92,7 @@ namespace WebApi.Controllers
             return Ok(purchaseDtos);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("GetByApproved/notApproved")]
         public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetNotApproved()
         {
@@ -95,6 +104,7 @@ namespace WebApi.Controllers
             return Ok(purchaseDtos);
         }
 
+        [Authorize]
         [HttpGet("GetByClient/{clientId}")]
         public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetByClient(int clientId)
         {
@@ -106,6 +116,7 @@ namespace WebApi.Controllers
             return Ok(purchaseDtos);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("GetByDate/{date}")]
         public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetByDate(DateTime date)
         {
@@ -117,6 +128,7 @@ namespace WebApi.Controllers
             return Ok(purchaseDtos);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("GetByProduct/{productId}")]
         public async Task<ActionResult<IEnumerable<PurchaseDTO>>> GetByProduct(int productId)
         {

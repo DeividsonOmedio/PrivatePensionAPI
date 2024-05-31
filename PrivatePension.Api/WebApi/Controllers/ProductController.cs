@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces.Interfaceservices;
 using Domain.Notifications;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.DTOs;
 
@@ -21,6 +23,7 @@ namespace WebApi.Controllers
             _mapper = mapper;
         }
 
+        [Authorize(Roles = "admin")]
         [HttpPost]
         public async Task<ActionResult<ProductDto>> AddProduct(ProductDto productDto)
         {
@@ -32,6 +35,7 @@ namespace WebApi.Controllers
             return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, ProductDto productDto)
         {
@@ -46,6 +50,7 @@ namespace WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
@@ -56,6 +61,7 @@ namespace WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Product>>> GetAllProducts()
         {
@@ -64,6 +70,7 @@ namespace WebApi.Controllers
             return Ok(productsDto);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("{id}")]
         public async Task<ActionResult<ProductDto>> GetProductById(int id)
         {
@@ -75,6 +82,7 @@ namespace WebApi.Controllers
             return Ok(productDto);
         }
 
+        [Authorize]
         [HttpGet("GetProductsPurchasedByUser")]
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsPurchasedByUser(int userId)
         {
@@ -85,6 +93,7 @@ namespace WebApi.Controllers
             return Ok(productsDto);
         }
 
+        [Authorize]
         [HttpGet("GetProductsNotPurchasedByUser")]
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsNotPurchasedByUser(int userId)
         {
@@ -95,6 +104,7 @@ namespace WebApi.Controllers
             return Ok(productsDto);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("GetByName/{name}")]
         public async Task<ActionResult<ProductDto>> GetProductByName(string name)
         {
@@ -106,6 +116,7 @@ namespace WebApi.Controllers
             return Ok(productDto);
         }
 
+        [Authorize]
         [HttpGet("GetByAvailable/true")]
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetAvailableProducts()
         {
@@ -115,6 +126,7 @@ namespace WebApi.Controllers
             return Ok(productsDto);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("GetByAvailable/false")]
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetUnavailableProducts()
         {

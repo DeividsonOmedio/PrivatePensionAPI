@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces.Interfaceservices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.DTOs;
 
@@ -19,6 +20,7 @@ namespace WebApi.Controllers
             _mapper = mapper;
         }
 
+        [Authorize(Roles = "client")]
         [HttpPost]
         public async Task<IActionResult> AddContribution(ContributionDto contributionDto)
         {
@@ -32,6 +34,7 @@ namespace WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateContribution(int id, ContributionDto contributionDto)
         {
@@ -50,6 +53,7 @@ namespace WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteContribution(int id)
         {
@@ -62,6 +66,7 @@ namespace WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ContributionDto>>> GetAllContributions()
         {
@@ -70,6 +75,7 @@ namespace WebApi.Controllers
             return Ok(contributionDtos);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("{id}")]
         public async Task<ActionResult<ContributionDto>> GetContributionById(int id)
         {
@@ -83,6 +89,7 @@ namespace WebApi.Controllers
             return Ok(contributionDto);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("GetByContributionDate/{contributionDate}")]
         public async Task<ActionResult<IEnumerable<ContributionDto>>> GetByContributionDate(DateTime contributionDate)
         {
@@ -94,6 +101,7 @@ namespace WebApi.Controllers
             return Ok(contributionDtos);
         }
 
+        [Authorize(Roles = "admin")]
         [HttpGet("GetByContributionDateByUser/{contributionDate}/{userId}")]
         public async Task<ActionResult<IEnumerable<ContributionDto>>> GetByContributionDateByUser(DateTime contributionDate, int userId)
         {
@@ -105,6 +113,7 @@ namespace WebApi.Controllers
             return Ok(contributionDtos);
         }
 
+        [Authorize]
         [HttpGet("GetByPurchaseId/{purchaseId}")]
         public async Task<ActionResult<IEnumerable<ContributionDto>>> GetByPurchaseId(int purchaseId)
         {
@@ -116,6 +125,7 @@ namespace WebApi.Controllers
             return Ok(contributionDto);
         }
 
+        [Authorize]
         [HttpGet("GetByUser/{userId}")]
         public async Task<ActionResult<IEnumerable<ContributionDto>>> GetByUser(int userId)
         {

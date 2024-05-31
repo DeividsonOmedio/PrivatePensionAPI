@@ -10,16 +10,24 @@ namespace Services
         private readonly IPurchaseRepository _purchaseRepository;
         private readonly IUserService _userService;
         private readonly IProductService _productService;
+        private readonly IUserLogged _userLogged;
 
-        public PurchaseService(IPurchaseRepository purchaseRepository, IProductService productService, IUserService userService)
+        public PurchaseService(IPurchaseRepository purchaseRepository, IProductService productService, IUserService userService, IUserLogged userLogged)
         {
             _purchaseRepository = purchaseRepository;
             _productService = productService;
             _userService = userService;
+            _userLogged = userLogged;
         }
 
         public async Task<Notifies> AddPurchase(Purchase purchase)
         {
+            int currentUserId = _userLogged.GetCurrentUserId();
+
+            if (purchase.ClientId != currentUserId)
+            {
+                return Notifies.Error("User cannot make a purchase for another user.");
+            }
 
             var validatePurchase = ValidatePurchase(purchase);
             if (validatePurchase.Status == false)
@@ -41,6 +49,7 @@ namespace Services
                 return Notifies.Error("User not found");
             if (user.Role == Domain.Enums.UserRolesEnum.admin)
                 return Notifies.Error("Admins can't make purchases");
+            
 
             if(user.WalletBalance < product.Price)
                 return Notifies.Error("Insufficient balance");
@@ -53,7 +62,8 @@ namespace Services
             purchase.PurchaseDate = DateTime.Now;
             purchase.IsApproved = false;
 
-            return await _purchaseRepository.Add(purchase);
+            var result = await _purchaseRepository.Add(purchase);
+            return result;
         }
 
         public async Task<Notifies> UpdatePurchaseIsApproved(int purchaseId)

@@ -73,22 +73,28 @@ namespace Services
 
             return await _productRepository.GetById(id);
         }
-        public Task<List<Product>> GetProductsPurchasedByUser(int userId)
+        public async Task<List<Product>> GetProductsPurchasedByUser(int userId)
         {
-            var user = _userService.GetUserById(userId);
+            var user = await _userService.GetUserById(userId);
             if (user == null)
                 return null;
 
-            return _complexQueriesProductRepository.GetProductsPurchasedByUser(userId);
+            if (user.Role != Domain.Enums.UserRolesEnum.admin && user.Id != userId)
+                return null;
+
+            return await _complexQueriesProductRepository.GetProductsPurchasedByUser(userId);
         }
 
-        public Task<List<Product>> GetProductsNotPurchasedByUser(int userId)
+        public async Task<List<Product>> GetProductsNotPurchasedByUser(int userId)
         {
-            var user = _userService.GetUserById(userId);
+            var user = await _userService.GetUserById(userId);
             if (user == null)
                 return null;
 
-            return _complexQueriesProductRepository.GetProductsNotPurchasedByUser(userId);
+            if (user.Role != Domain.Enums.UserRolesEnum.admin && user.Id != userId)
+                return null;
+
+            return await _complexQueriesProductRepository.GetProductsNotPurchasedByUser(userId);
         }
 
         public Notifies ValidateProduct(Product product)

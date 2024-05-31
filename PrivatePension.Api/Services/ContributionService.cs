@@ -10,23 +10,33 @@ namespace Services
         private readonly IContributionRepository _contributionRepository;
         private readonly IUserService _userService;
         private readonly IPurchaseService _purchaseService;
-
-        public ContributionService(IContributionRepository contributionRepository, IUserService userService, IPurchaseService purchaseService)
+        private readonly IUserLogged _userLogged;
+        public ContributionService(IContributionRepository contributionRepository, IUserService userService, IPurchaseService purchaseService, IUserLogged userLogged)
         {
             _contributionRepository = contributionRepository;
             _userService = userService;
             _purchaseService = purchaseService;
+            _userLogged = userLogged;
         }
 
         public async Task<Notifies> AddContribution(Contribution contribution)
         {
+
             var validateContribution = ValidateContribution(contribution);
             if (validateContribution.Status == false)
                 return validateContribution;
-
+            
             var purchase = await _purchaseService.GetPurchaseById(contribution.PurchaseId);
             if (purchase == null)
                 return Notifies.Error("Purchase not found");
+            contribution.Purchase = purchase;
+
+            int currentUserId = _userLogged.GetCurrentUserId();
+            
+            if (purchase.ClientId != currentUserId)
+            {
+                return Notifies.Error("User cannot make a purchase for another user.");
+            }
             if (!purchase.IsApproved)
                 return Notifies.Error("Purchase not approved");
 
@@ -39,6 +49,7 @@ namespace Services
             var UpdateUserWallet = await _userService.UpdateUser(user);
             if (UpdateUserWallet.Status == false)
                 return Notifies.Error("Erro no servidor");
+            contribution.Purchase.Client = user;
 
             return await _contributionRepository.Add(contribution);
         }

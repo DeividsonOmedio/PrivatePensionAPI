@@ -6,9 +6,16 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Services
 {
-    public class UserService(IUserRepository userRepository) : IUserService
+    public class UserService : IUserService
     {
-        private readonly IUserRepository _userRepository = userRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly PasswordHasherService _passwordHasherService;
+
+        public UserService(IUserRepository userRepository, PasswordHasherService passwordHasherService)
+        {
+            _userRepository = userRepository;
+            _passwordHasherService = passwordHasherService;
+        }
 
         public async Task<Notifies> AddUser(User user)
         {
@@ -20,8 +27,7 @@ namespace Services
             if (validatePassword.Status == false)
                 return validatePassword;
 
-            var passwordHasher = new PasswordHasher<User>();
-            user.Password = passwordHasher.HashPassword(user, user.Password);
+            user.Password = _passwordHasherService.HashPassword(user, user.Password);
 
             var userEmail = await _userRepository.GetByEmail(user.Email);
             if (userEmail != null)
@@ -47,7 +53,6 @@ namespace Services
                 return Notifies.Error("User not found");
             searchUser.UserName = user.UserName;
             searchUser.Email = user.Email;
-            searchUser.WalletBalance = user.WalletBalance;
             if (user.Password != "" && user.Password != null)
             {
                 var validatePassword = ValidPassword(user.Password);
@@ -59,23 +64,24 @@ namespace Services
                 searchUser.Password = user.Password;
             }
 
-            if (searchUser.Role == Domain.Enums.UserRolesEnum.admin)
-                searchUser.WalletBalance = null;
-
             return await _userRepository.Update(searchUser);
         }
 
 
-        public async Task<Notifies> UpdateWalletBalance(User user)
+        public async Task<Notifies> UpdateWalletBalance(int id, decimal walletBalance)
         {
-            var validate = ValidateUser(user);
-            if (validate.Status == false)
-                return validate;
+            if (id <= 0)
+                return Notifies.Error("Invalid Id");
 
+            var user = await _userRepository.GetById(id);
 
-
+            if (user == null)
+                return Notifies.Error("User not found");
+            
             if (user.Role == Domain.Enums.UserRolesEnum.admin)
-                user.WalletBalance = null;
+                return Notifies.Error("Admin cannot have a wallet balance");
+
+            user.WalletBalance += walletBalance;
 
             return await _userRepository.Update(user);
         }
@@ -109,9 +115,14 @@ namespace Services
             return await _userRepository.GetById(id);
         }
 
-        public Task<User?> ValidateUserCredentials(string email, string password)
+        public async Task<User?> ValidateUserCredentials(string email, string password)
         {
-            return _userRepository.ValidateUserCredentials(email, password);
+            var user = await _userRepository.GetByEmail(email);
+            if (user == null)
+                return null;
+
+            var result = _passwordHasherService.VerifyPassword(user, password);
+            return result ? user : null;
         }
 
         public Notifies ValidateUser(User user)

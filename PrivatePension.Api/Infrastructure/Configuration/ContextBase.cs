@@ -53,9 +53,5 @@ namespace Infrastructure.Configuration
             );
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=PrivatePensionDb;Trusted_Connection=True;Integrated Security=True;Encrypt=False;");
-        }
     }
 }
