@@ -21,7 +21,7 @@ namespace Services
                 return validatePassword;
 
             var passwordHasher = new PasswordHasher<User>();
-            user.Password = passwordHasher.HashPassword(user , user.Password);
+            user.Password = passwordHasher.HashPassword(user, user.Password);
 
             var userEmail = await _userRepository.GetByEmail(user.Email);
             if (userEmail != null)
@@ -107,6 +107,11 @@ namespace Services
                 return null;
 
             return await _userRepository.GetById(id);
+        }
+
+        public Task<User?> ValidateUserCredentials(string email, string password)
+        {
+            return _userRepository.ValidateUserCredentials(email, password);
         }
 
         public Notifies ValidateUser(User user)
