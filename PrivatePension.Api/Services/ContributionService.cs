@@ -49,7 +49,6 @@ namespace Services
             var UpdateUserWallet = await _userService.UpdateUser(user);
             if (UpdateUserWallet.Status == false)
                 return Notifies.Error("Erro no servidor");
-            contribution.Purchase.Client = user;
 
             return await _contributionRepository.Add(contribution);
         }

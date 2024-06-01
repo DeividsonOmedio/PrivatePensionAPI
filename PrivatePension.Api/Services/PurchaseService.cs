@@ -40,7 +40,7 @@ namespace Services
                 return Notifies.Error("Product not available");
             purchase.Product = product;
 
-            var purchaseExists = await GetByProductAndUser(purchase.ProductId, purchase.ClientId);
+            var purchaseExists = await GetByProductAndUser(purchase.ProductId, purchase.ProductId);
             if (purchaseExists != null)
                 return Notifies.Error("Product already purchased");
 
@@ -49,20 +49,23 @@ namespace Services
                 return Notifies.Error("User not found");
             if (user.Role == Domain.Enums.UserRolesEnum.admin)
                 return Notifies.Error("Admins can't make purchases");
-            
+            purchase.Client = user;
 
             if(user.WalletBalance < product.Price)
                 return Notifies.Error("Insufficient balance");
             user.WalletBalance = user.WalletBalance - product.Price;
-            var UpdateUserWallet = await _userService.UpdateUser(user);
-            if (UpdateUserWallet.Status == false)
-                return Notifies.Error("Erro no servidor");
-            purchase.Client = user;
 
             purchase.PurchaseDate = DateTime.Now;
             purchase.IsApproved = false;
 
             var result = await _purchaseRepository.Add(purchase);
+            if (result.Status == false)
+                return result;
+
+            var UpdateUserWallet = await _userService.UpdateUser(user);
+            if (UpdateUserWallet.Status == false)
+                return Notifies.Error("Erro no servidor");
+
             return result;
         }
 
@@ -143,7 +146,7 @@ namespace Services
         public Notifies ValidatePurchase(Purchase purchase)
         {
             var validateClientId = Notifies.ValidatePropertyInt(purchase.ClientId, "Client Id");
-            if (validateClientId.Status == false)
+            if (validateClientId.Status == false)   
                 return validateClientId;
 
             var validateProductId = Notifies.ValidatePropertyInt(purchase.ProductId, "Product Id");

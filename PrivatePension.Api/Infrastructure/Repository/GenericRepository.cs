@@ -1,4 +1,5 @@
-﻿using Domain.Interfaces.InterfacesRepositories;
+﻿using Domain.Entities;
+using Domain.Interfaces.InterfacesRepositories;
 using Domain.Notifications;
 using Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,21 @@ namespace Infrastructure.Repository
 
         public async Task<Notifies> Add(T entity)
         {
+            
+            if (entity is Purchase purchase) //Para não adicionar novo produto e novo cliente
+            {
+                _context.Entry(purchase).State = EntityState.Added;
+
+                if (purchase.Product != null)
+                {
+                    _context.Entry(purchase.Product).State = EntityState.Unchanged;
+                }
+
+                if (purchase.Client != null)
+                {
+                    _context.Entry(purchase.Client).State = EntityState.Unchanged;
+                }
+            }
             await _dbSet.AddAsync(entity);
             await _context.SaveChangesAsync();
             return Notifies.Success();

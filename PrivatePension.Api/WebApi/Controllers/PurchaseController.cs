@@ -25,7 +25,6 @@ namespace WebApi.Controllers
         [HttpPost]
         public async Task<ActionResult<Purchase>> CreatePurchase(PurchaseDTO purchaseDto)
         {
-            purchaseDto.Id = null;
             var purchase = _mapper.Map<Purchase>(purchaseDto);
             var result = await _purchaseService.AddPurchase(purchase);
             if (!result.Status == true)
