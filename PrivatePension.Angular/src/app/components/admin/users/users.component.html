@@ -1,0 +1,35 @@
+<a routerLink="/admin/manageuser">adicionar cliente</a>
+@if (userList && userList.length > 0) {
+    <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">CLIENTE</th>
+            <th scope="col">PRODUTO</th>
+            <th scope="col">DATA</th>
+            <th scope="col">STATUS</th>
+            <th scope="col">&nbsp;</th>
+          </tr>
+        </thead>
+        <tbody>
+            @for (item of userList; track item.id) {
+                <tr>
+                    <th scope="row">{{ item.id }}</th>
+                    <td>{{ item.username }}</td>
+                    <td>{{ item.email }}</td>
+                    <td>{{ item.password }}</td>
+                    <td>{{ item.role }}</td>
+                    <td>{{ item.WalletBalance }}</td>
+                    <td><button (onclick)="insertInWallet()"></button></td>
+                    <td><button (onclick)="Edit()"></button></td>
+                    <td><button (onclick)="Delete()"></button></td>
+                </tr>
+            }
+        </tbody>
+         
+    </table>
+}
+@else {
+    <div class="alert alert-warning" role="alert">
+        Não há aprovações pendentes.
+    </div>}
