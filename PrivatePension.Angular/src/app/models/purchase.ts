@@ -1,5 +1,5 @@
 export interface IPurchase {
-    id: number;
+    id?: number;
     clientId: number;
     productId: number;
     date: Date;

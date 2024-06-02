@@ -2,8 +2,7 @@
   <div class="card">
     <div class="card-body">
       <h3 class="card-title login-title">Login</h3>
-      <form action="">
-      <!-- <form [formGroup]="userForm"> -->
+      <form [formGroup]="userForm">
         <div class="form-group">
           <label for="exampleInputEmail1">
             <i class="bi bi-envelope"></i> E-mail
@@ -40,7 +39,6 @@
             cliente
           </button>
           <button
-            type="submit"
             class="btn btn-primary btn-block"
             (click)="admin()"
           >

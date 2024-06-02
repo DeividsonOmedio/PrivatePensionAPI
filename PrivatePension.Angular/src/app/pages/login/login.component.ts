@@ -1,20 +1,21 @@
 import { Component } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { IUser } from '../../models/user';
+import { LoginApiService } from '../../services/login-api.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [],
+  imports: [ReactiveFormsModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
 export class LoginComponent {
   userForm: FormGroup;
   
-  constructor(private router: Router) {
+  constructor(private router: Router, private Login: LoginApiService) { 
     this.userForm = new FormGroup({
-      name: new FormControl(),
       email: new FormControl(),
       password: new FormControl(),
       
@@ -23,17 +24,17 @@ export class LoginComponent {
 
 
   submitForm() {
-    // const user: IUser = this.userForm.value;
-    // let userLoged = this.Login.ValidateUser(user);
-    // if(!userLoged){
-    //   alert('User not found');
-    //   return;
-    // }
-    // window.location.href = '/dashboard';
-    this.router.navigate(['/client'])
+    const user: IUser = this.userForm.value;
+    console.log(user);
+    let userLoged = this.Login.login(user);
+    if(!userLoged){
+      alert('User not found');
+      return;
+    }
+    //this.router.navigate(['/client'])
   }
   admin(){
-    this.router.navigate(['/admin'])
+    //this.router.navigate(['/admin'])
   }
   
 }
