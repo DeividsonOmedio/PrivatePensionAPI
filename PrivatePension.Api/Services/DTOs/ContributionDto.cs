@@ -13,9 +13,6 @@ namespace Services.DTOs
         [Required]
         public int PurchaseId { get; set; }
 
-        [ForeignKey("PurchaseId")]
-        public Purchase Purchase { get; set; } = null!;
-
         [Required]
         public decimal Amount { get; set; }
 

@@ -14,7 +14,7 @@ namespace Infrastructure.Repository
         public async Task<Notifies> Add(T entity)
         {
             
-            if (entity is Purchase purchase) //Para não adicionar novo produto e novo cliente
+            if (entity is Purchase purchase) //Para não adicionar novo produto e novo cliente junto a compra
             {
                 _context.Entry(purchase).State = EntityState.Added;
 
@@ -26,6 +26,15 @@ namespace Infrastructure.Repository
                 if (purchase.Client != null)
                 {
                     _context.Entry(purchase.Client).State = EntityState.Unchanged;
+                }
+            }
+            if (entity is Contribution contribution) //Para não adicionar nova compra junto a contribuiçao
+            {
+                _context.Entry(contribution).State = EntityState.Added;
+
+                if (contribution.Purchase != null)
+                {
+                    _context.Entry(contribution.Purchase).State = EntityState.Unchanged;
                 }
             }
             await _dbSet.AddAsync(entity);

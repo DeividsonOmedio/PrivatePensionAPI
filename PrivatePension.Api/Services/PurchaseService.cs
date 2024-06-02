@@ -40,10 +40,11 @@ namespace Services
                 return Notifies.Error("Product not available");
             purchase.Product = product;
 
-            var purchaseExists = await GetByProductAndUser(purchase.ProductId, purchase.ProductId);
-            if (purchaseExists != null)
+            var purchaseExists = await _productService.GetProductsPurchasedByUser(purchase.ClientId);
+            if (purchaseExists != null && purchaseExists.Any(p => p.Id == purchase.ProductId))
+            {
                 return Notifies.Error("Product already purchased");
-
+            }
             var user = await _userService.GetUserById(purchase.ClientId);
             if (user == null)
                 return Notifies.Error("User not found");

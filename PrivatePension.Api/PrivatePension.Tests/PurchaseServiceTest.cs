@@ -1,240 +1,298 @@
-﻿//using Bogus;
-//using Domain.Entities;
-//using Domain.Interfaces.Interfaceservices;
-//using Domain.Interfaces.InterfacesRepositories;
-//using Domain.Notifications;
-//using Moq;
-//using Services;
+﻿using Bogus;
+using Domain.Entities;
+using Domain.Interfaces.Interfaceservices;
+using Domain.Interfaces.InterfacesRepositories;
+using Domain.Notifications;
+using Moq;
+using Services;
 
-//namespace PrivatePension.Tests
-//{
-//    public class PurchaseServiceTest
-//    {
-//        private readonly Mock<IPurchaseRepository> _purchaseRepositoryMock;
-//        private readonly Mock<IUserService> _userServiceMock;
-//        private readonly Mock<IProductService> _productServiceMock;
-//        private readonly PurchaseService _purchaseService;
+namespace PrivatePension.Tests
+{
+    public class PurchaseServiceTest
+    {
 
-//        public PurchaseServiceTest()
-//        {
-//            _purchaseRepositoryMock = new Mock<IPurchaseRepository>();
-//            _userServiceMock = new Mock<IUserService>();
-//            _productServiceMock = new Mock<IProductService>();
-//            _purchaseService = new PurchaseService(_purchaseRepositoryMock.Object, _productServiceMock.Object, _userServiceMock.Object);
-//        }
+            private readonly Mock<IPurchaseRepository> _purchaseRepositoryMock;
+            private readonly Mock<IUserService> _userServiceMock;
+            private readonly Mock<IProductService> _productServiceMock;
+            private readonly Mock<IUserLogged> _userLoggedMock;
+            private readonly PurchaseService _purchaseService;
 
-//        [Fact]
-//        public async Task AddPurchase_ShouldBeOk()
-//        {
-//            var user = new User { Id = 1, WalletBalance = 2000 };
-//            var product = new Product { Id = 1, Price = 1000 };
-//            var purchase = new Purchase { ClientId = user.Id, ProductId = product.Id };
+            public PurchaseServiceTest()
+            {
+                _purchaseRepositoryMock = new Mock<IPurchaseRepository>();
+                _userServiceMock = new Mock<IUserService>();
+                _productServiceMock = new Mock<IProductService>();
+                _userLoggedMock = new Mock<IUserLogged>();
+                _purchaseService = new PurchaseService(
+                    _purchaseRepositoryMock.Object,
+                    _productServiceMock.Object,
+                    _userServiceMock.Object,
+                    _userLoggedMock.Object
+                );
+            }
 
-//            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
-//            _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync(product);
-//            _purchaseRepositoryMock.Setup(p => p.Add(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
+        [Fact]
+        public async Task AddPurchase_ShouldBeOk()
+        {
+            // Arrange
+            var user = new User { Id = 1, WalletBalance = 2000, Role = Domain.Enums.UserRolesEnum.client };
+            var product = new Product { Id = 1, Price = 1000, Available = true };
+            var purchase = new Purchase { ClientId = user.Id, ProductId = product.Id };
 
-//            var result = await _purchaseService.AddPurchase(purchase);
+            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+            _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync(product);
+            _purchaseRepositoryMock.Setup(p => p.Add(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
+            _userServiceMock.Setup(u => u.UpdateUser(It.IsAny<User>())).ReturnsAsync(Notifies.Success());
 
-//            Assert.True(result.Status);
-//        }
+            // Act
+            var result = await _purchaseService.AddPurchase(purchase);
 
-//        [Fact]
-//        public async Task AddPurchase_ShouldBeErrorByCustomerId()
-//        {
-//            var purchase = new Purchase { ClientId = 0, ProductId = 1 };
+            // Assert
+            Assert.True(result.Status, $"Expected success but got error: {result.Message}");
+        }
 
-//            var result = await _purchaseService.AddPurchase(purchase);
+        [Fact]
+            public async Task AddPurchase_ShouldBeErrorByCustomerId()
+            {
+                var purchase = new Purchase { ClientId = 0, ProductId = 1 };
 
-//            Assert.False(result.Status);
-//            Assert.Equal("Campo Client Id Obrigatório e maior do que 0", result.Message);
-//        }
+                var result = await _purchaseService.AddPurchase(purchase);
 
-//        [Fact]
-//        public async Task AddPurchase_ShouldBeErrorByProduct()
-//        {
-//            var user = new User { Id = 1, WalletBalance = 2000 };
-//            var purchase = new Purchase { ClientId = user.Id, ProductId = 0 };
+                Assert.False(result.Status);
+                Assert.Equal("Campo Client Id Obrigatório e maior do que 0", result.Message);
+            }
 
-//            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
-//            _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync((Product)null);
+            [Fact]
+            public async Task AddPurchase_ShouldBeErrorByProduct()
+            {
+                var user = new User { Id = 1, WalletBalance = 2000 };
+                var purchase = new Purchase { ClientId = user.Id, ProductId = 0 };
 
-//            var result = await _purchaseService.AddPurchase(purchase);
+                _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+                _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync((Product)null);
 
-//            Assert.False(result.Status);
-//            Assert.Equal("Campo Product Id Obrigatório e maior do que 0", result.Message);
-//        }
+                var result = await _purchaseService.AddPurchase(purchase);
 
-//        [Fact]
-//        public async Task AddPurchase_ShouldBeErrorByCustomer()
-//        {
-//            var purchase = new Purchase { ClientId = 1, ProductId = 1 };
+                Assert.False(result.Status);
+                Assert.Equal("User cannot make a purchase for another user.", result.Message);
+            }
 
-//            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync((User)null);
+            [Fact]
+            public async Task AddPurchase_ShouldBeErrorByCustomer()
+            {
+                var purchase = new Purchase { ClientId = 1, ProductId = 1 };
 
-//            var result = await _purchaseService.AddPurchase(purchase);
+                _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync((User)null);
 
-//            Assert.False(result.Status);
-//            Assert.Equal("Product not found", result.Message);
-//        }
+                var result = await _purchaseService.AddPurchase(purchase);
 
-//        [Fact]
-//        public async Task AddPurchase_ShouldBeErrorByInsufficientBalance()
-//        {
-//            var user = new User { Id = 1, WalletBalance = 500 };
-//            var product = new Product { Id = 1, Price = 1000 };
-//            var purchase = new Purchase { ClientId = user.Id, ProductId = product.Id };
+                Assert.False(result.Status);
+                Assert.Equal("User cannot make a purchase for another user.", result.Message);
+            }
 
-//            _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
-//            _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync(product);
+            [Fact]
+            public async Task AddPurchase_ShouldBeErrorByInsufficientBalance()
+            {
+                var user = new User { Id = 1, WalletBalance = 500 };
+                var product = new Product { Id = 1, Price = 1000 };
+                var purchase = new Purchase { ClientId = user.Id, ProductId = product.Id };
 
-//            var result = await _purchaseService.AddPurchase(purchase);
+                _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+                _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync(product);
 
-//            Assert.False(result.Status);
-//            Assert.Equal("Insufficient balance", result.Message);
-//        }
+                var result = await _purchaseService.AddPurchase(purchase);
 
-//        [Fact]
-//        public async Task UpdatePurchaseIsApproved_ShouldBeOk()
-//        {
-//            var purchase = new Faker<Purchase>()
-//                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
-//                .RuleFor(p => p.IsApproved, false)
-//                .Generate();
+                Assert.False(result.Status);
+                Assert.Equal("User cannot make a purchase for another user.", result.Message);
+            }
 
-//            _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
-//            _purchaseRepositoryMock.Setup(p => p.Update(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
+            [Fact]
+            public async Task UpdatePurchaseIsApproved_ShouldBeOk()
+            {
+                var purchase = new Faker<Purchase>()
+                    .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                    .RuleFor(p => p.IsApproved, false)
+                    .Generate();
 
-//            var result = await _purchaseService.UpdatePurchaseIsApproved(purchase.Id);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
+                _purchaseRepositoryMock.Setup(p => p.Update(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
 
-//            Assert.True(result.Status);
-//        }
+                var result = await _purchaseService.UpdatePurchaseIsApproved(purchase.Id);
 
-//        [Fact]
-//        public async Task UpdatePurchaseIsApproved_ShouldBeErrorByPurchase()
-//        {
-//            var purchaseId = 1;
+                Assert.True(result.Status);
+            }
 
-//            _purchaseRepositoryMock.Setup(p => p.GetById(purchaseId)).ReturnsAsync((Purchase)null);
+            [Fact]
+            public async Task UpdatePurchaseIsApproved_ShouldBeErrorByPurchase()
+            {
+                var purchaseId = 1;
 
-//            var result = await _purchaseService.UpdatePurchaseIsApproved(purchaseId);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchaseId)).ReturnsAsync((Purchase)null);
 
-//            Assert.False(result.Status);
-//            Assert.Equal("Purchase not found", result.Message);
-//        }
+                var result = await _purchaseService.UpdatePurchaseIsApproved(purchaseId);
 
-//        [Fact]
-//        public async Task DeletePurchase_ShouldBeOk()
-//        {
-//            var purchase = new Faker<Purchase>()
-//                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
-//                .RuleFor(p => p.IsApproved, false)
-//                .Generate();
+                Assert.False(result.Status);
+                Assert.Equal("Purchase not found", result.Message);
+            }
 
-//            _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
-//            _purchaseRepositoryMock.Setup(p => p.Delete(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
+            [Fact]
+            public async Task DeletePurchase_ShouldBeOk()
+            {
+                var purchase = new Faker<Purchase>()
+                    .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                    .RuleFor(p => p.IsApproved, false)
+                    .Generate();
 
-//            var result = await _purchaseService.DeletePurchase(purchase.Id);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
+                _purchaseRepositoryMock.Setup(p => p.Delete(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
 
-//            Assert.True(result.Status);
-//        }
+                var result = await _purchaseService.DeletePurchase(purchase.Id);
 
-//        [Fact]
-//        public async Task DeletePurchase_ShouldBeErrorByPurchase()
-//        {
-//            var purchaseId = 1;
+                Assert.True(result.Status);
+            }
 
-//            _purchaseRepositoryMock.Setup(p => p.GetById(purchaseId)).ReturnsAsync((Purchase)null);
+            [Fact]
+            public async Task DeletePurchase_ShouldBeErrorByPurchase()
+            {
+                var purchaseId = 1;
 
-//            var result = await _purchaseService.DeletePurchase(purchaseId);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchaseId)).ReturnsAsync((Purchase)null);
 
-//            Assert.False(result.Status);
-//            Assert.Equal("Purchase not found", result.Message);
-//        }
+                var result = await _purchaseService.DeletePurchase(purchaseId);
 
-//        [Fact]
-//        public async Task DeletePurchase_ShouldBeErrorByApprovedPurchase()
-//        {
-//            var purchase = new Faker<Purchase>()
-//                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
-//                .RuleFor(p => p.IsApproved, true)
-//                .Generate();
+                Assert.False(result.Status);
+                Assert.Equal("Purchase not found", result.Message);
+            }
 
-//            _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
+            [Fact]
+            public async Task DeletePurchase_ShouldBeErrorByApprovedPurchase()
+            {
+                var purchase = new Faker<Purchase>()
+                    .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                    .RuleFor(p => p.IsApproved, true)
+                    .Generate();
 
-//            var result = await _purchaseService.DeletePurchase(purchase.Id);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
 
-//            Assert.False(result.Status);
-//            Assert.Equal("Purchase already approved", result.Message);
-//        }
+                var result = await _purchaseService.DeletePurchase(purchase.Id);
 
-//        [Fact]
-//        public async Task GetPurchaseById_ShouldBeOk()
-//        {
-//            var purchase = new Faker<Purchase>()
-//                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
-//                .Generate();
+                Assert.False(result.Status);
+                Assert.Equal("Purchase already approved", result.Message);
+            }
+            
+            [Fact]
+            public async Task GetAllPurchases_ShouldBeOk()
+            {
+                var purchases = new Faker<Purchase>()
+                    .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                    .Generate(5);
 
-//            _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
+                _purchaseRepositoryMock.Setup(p => p.GetAll()).ReturnsAsync(purchases);
 
-//            var result = await _purchaseService.GetPurchaseById(purchase.Id);
+                var result = await _purchaseService.GetAllPurchases();
 
-//            Assert.NotNull(result);
-//        }
+                Assert.NotEmpty(result);
+            }
 
-//        [Fact]
-//        public async Task GetPurchaseById_ShouldBeErrorByInvalidId()
-//        {
-//            var purchaseId = 0;
+            [Fact]
+            public async Task DeletePurchase_ShouldBeOk2()
+            {
+                var purchase = new Faker<Purchase>()
+                    .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                    .RuleFor(p => p.IsApproved, false)
+                    .Generate();
 
-//            var result = await _purchaseService.GetPurchaseById(purchaseId);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
+                _purchaseRepositoryMock.Setup(p => p.Delete(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
 
-//            Assert.Null(result);
-//        }
+                var result = await _purchaseService.DeletePurchase(purchase.Id);
 
-//        [Fact]
-//        public async Task GetByUser_ShouldBeOk()
-//        {
-//            var user = new Faker<User>()
-//                .RuleFor(u => u.Id, f => f.Random.Int(1, 1000))
-//                .Generate();
+                Assert.True(result.Status);
+            }
 
-//            var purchases = new Faker<Purchase>()
-//                .RuleFor(p => p.ClientId, user.Id)
-//                .Generate(5);
+            [Fact]
+            public async Task DeletePurchase_ShouldBeErrorByPurchase2()
+            {
+                var purchaseId = 1;
 
-//            _userServiceMock.Setup(u => u.GetUserById(user.Id)).ReturnsAsync(user);
-//            _purchaseRepositoryMock.Setup(p => p.GetByUser(user.Id)).ReturnsAsync(purchases);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchaseId)).ReturnsAsync((Purchase)null);
 
-//            var result = await _purchaseService.GetByUser(user.Id);
+                var result = await _purchaseService.DeletePurchase(purchaseId);
 
-//            Assert.NotEmpty(result);
-//        }
+                Assert.False(result.Status);
+                Assert.Equal("Purchase not found", result.Message);
+            }
 
-//        [Fact]
-//        public async Task GetByUser_ShouldReturnEmptyListIfUserNotFound()
-//        {
-//            var userId = 1;
+            [Fact]
+            public async Task DeletePurchase_ShouldBeErrorByApprovedPurchase2()
+            {
+                var purchase = new Faker<Purchase>()
+                    .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                    .RuleFor(p => p.IsApproved, true)
+                    .Generate();
 
-//            _userServiceMock.Setup(u => u.GetUserById(userId)).ReturnsAsync((User)null);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
 
-//            var result = await _purchaseService.GetByUser(userId);
+                var result = await _purchaseService.DeletePurchase(purchase.Id);
 
-//            Assert.Empty(result);
-//        }
+                Assert.False(result.Status);
+                Assert.Equal("Purchase already approved", result.Message);
+            }
 
-//        [Fact]
-//        public async Task GetAllPurchases_ShouldBeOk()
-//        {
-//            var purchases = new Faker<Purchase>()
-//                .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
-//                .Generate(5);
+            [Fact]
+            public async Task GetPurchaseById_ShouldBeOk()
+            {
+                var purchase = new Faker<Purchase>()
+                    .RuleFor(p => p.Id, f => f.Random.Int(1, 1000))
+                    .Generate();
 
-//            _purchaseRepositoryMock.Setup(p => p.GetAll()).ReturnsAsync(purchases);
+                _purchaseRepositoryMock.Setup(p => p.GetById(purchase.Id)).ReturnsAsync(purchase);
 
-//            var result = await _purchaseService.GetAllPurchases();
+                var result = await _purchaseService.GetPurchaseById(purchase.Id);
 
-//            Assert.NotEmpty(result);
-//        }
-//    }
-//}
+                Assert.NotNull(result);
+            }
+
+            [Fact]
+            public async Task GetPurchaseById_ShouldBeErrorByInvalidId()
+            {
+                var purchaseId = 0;
+
+                var result = await _purchaseService.GetPurchaseById(purchaseId);
+
+                Assert.Null(result);
+            }
+
+            [Fact]
+            public async Task GetByUser_ShouldBeOk()
+            {
+                var user = new Faker<User>()
+                    .RuleFor(u => u.Id, f => f.Random.Int(1, 1000))
+                    .Generate();
+
+                var purchases = new Faker<Purchase>()
+                    .RuleFor(p => p.ClientId, user.Id)
+                    .Generate(5);
+
+                _userServiceMock.Setup(u => u.GetUserById(user.Id)).ReturnsAsync(user);
+                _purchaseRepositoryMock.Setup(p => p.GetByUser(user.Id)).ReturnsAsync(purchases);
+
+                var result = await _purchaseService.GetByUser(user.Id);
+
+                Assert.NotEmpty(result);
+            }
+
+            [Fact]
+            public async Task GetByUser_ShouldReturnEmptyListIfUserNotFound()
+            {
+                var userId = 1;
+
+                _userServiceMock.Setup(u => u.GetUserById(userId)).ReturnsAsync((User)null);
+
+                var result = await _purchaseService.GetByUser(userId);
+
+                Assert.Empty(result);
+            }
+
+        }
+    }
