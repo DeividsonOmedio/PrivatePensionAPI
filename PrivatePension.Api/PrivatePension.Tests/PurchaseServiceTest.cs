@@ -34,22 +34,22 @@ namespace PrivatePension.Tests
         [Fact]
         public async Task AddPurchase_ShouldBeOk()
         {
-            // Arrange
-            var user = new User { Id = 1, WalletBalance = 2000, Role = Domain.Enums.UserRolesEnum.client };
+            var user = new User { Id = 1, WalletBalance = 2000 };
             var product = new Product { Id = 1, Price = 1000, Available = true };
             var purchase = new Purchase { ClientId = user.Id, ProductId = product.Id };
 
+            _userLoggedMock.Setup(u => u.GetCurrentUserId()).Returns(user.Id);
             _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
             _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync(product);
+            _productServiceMock.Setup(p => p.GetProductsPurchasedByUser(purchase.ClientId)).ReturnsAsync(new List<Product>());
             _purchaseRepositoryMock.Setup(p => p.Add(It.IsAny<Purchase>())).ReturnsAsync(Notifies.Success());
-            _userServiceMock.Setup(u => u.UpdateUser(It.IsAny<User>())).ReturnsAsync(Notifies.Success());
+            _userServiceMock.Setup(u => u.UpdateUser(user)).ReturnsAsync(Notifies.Success());
 
-            // Act
             var result = await _purchaseService.AddPurchase(purchase);
 
-            // Assert
-            Assert.True(result.Status, $"Expected success but got error: {result.Message}");
+            Assert.True(result.Status);
         }
+
 
         [Fact]
             public async Task AddPurchase_ShouldBeErrorByCustomerId()
@@ -68,13 +68,14 @@ namespace PrivatePension.Tests
                 var user = new User { Id = 1, WalletBalance = 2000 };
                 var purchase = new Purchase { ClientId = user.Id, ProductId = 0 };
 
+                _userLoggedMock.Setup(u => u.GetCurrentUserId()).Returns(user.Id);
                 _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
                 _productServiceMock.Setup(p => p.GetProductById(purchase.ProductId)).ReturnsAsync((Product)null);
 
                 var result = await _purchaseService.AddPurchase(purchase);
 
                 Assert.False(result.Status);
-                Assert.Equal("User cannot make a purchase for another user.", result.Message);
+                Assert.Equal("Campo Product Id Obrigatório e maior do que 0", result.Message);
             }
 
             [Fact]
