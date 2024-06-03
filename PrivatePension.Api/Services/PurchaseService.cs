@@ -54,7 +54,7 @@ namespace Services
 
             if(user.WalletBalance < product.Price)
                 return Notifies.Error("Insufficient balance");
-            user.WalletBalance = user.WalletBalance - product.Price;
+            user.WalletBalance -= product.Price;
 
             purchase.PurchaseDate = DateTime.Now;
             purchase.IsApproved = false;
@@ -89,6 +89,17 @@ namespace Services
 
             if (purchase.IsApproved)
                 return Notifies.Error("Purchase already approved");
+
+            var user = await _userService.GetUserById(purchase.ClientId);
+            if (user == null)
+                return Notifies.Error("User not found");
+
+            var product = await _productService.GetProductById(purchase.ProductId);
+            if (product == null)
+                return Notifies.Error("Product not found");
+
+            user.WalletBalance += product.Price;
+            await _userService.UpdateUser(user);
 
             return await _purchaseRepository.Delete(purchase);
         }

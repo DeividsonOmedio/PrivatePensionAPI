@@ -40,7 +40,7 @@ namespace Infrastructure.Configuration
             {
                 Id = 2,
                 UserName = "Cliente 1",
-                Email = "cliente1@client.com",
+                Email = "client1@client.com",
                 Role = Domain.Enums.UserRolesEnum.client,
                 WalletBalance = 1300
             };
