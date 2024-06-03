@@ -1,15 +1,15 @@
 # PrivatePensionAPI
 
-###Descrição
+## Descrição
 Uma API REST C# para gerenciamento, cadastro, compra e consulta de produtos de uma previdência privada. onde  
 
-###Requisitos
+## Requisitos
 .NET SDK (versão 5.0 ou superior)
 Banco de dados SQL Server
 Visual Studio ou Visual Studio Code
 Postman ou outra ferramenta para testar API(Pode ser testado também o Swagger)
 
-###Configuração do Projeto
+## Configuração do Projeto
 Passo 1: Clonar o Repositório
 
 git clone https://github.com/DeividsonOmedio/PrivatePensionAPI.git
@@ -40,13 +40,13 @@ No Visual studio clique no botão HTTPS
 O projeto estará disponível em https://localhost:7109/.
 ou dotnet watch run (os 2 comandos abre o swagger no navegador.
 
-#Testando a Autenticação
+# Testando a Autenticação
 
-##Uso da Aplicação
+## Uso da Aplicação
 O Admistrador faz o login, cadastra os usuários, aprova as compras, adicona saldo a carteira dos clientes e visualiza edita ou deleta usuarios, produtos, compras e contribuições.
 o Cliente faz o login, realiza compras, deleta compras que ainda não foram aprovadas, realiza apostes, visualiza produtos disponiveis que ainda naõ foram adquiridos e visualiza suas comprs e aportes realizados. 
 
-###Detalhes
+### Detalhes
 Todos os endpoints são protegidos, o que implica que você precisará passar o token em todas as requisições
 Somente o Administrador Adiciona, Edita, Altera ou Deleta usuários, tendo um endpoint especifico para adicionar saldo a carteira do cliente.
 Detalhe: Ao alterar um cliente, se não fornecer uma nova senha, a antiga será mantida, então não precisa ser passada a senha se não quiser. Lembrando que todas as senhas são criptografadas antes de serem salvas no banco.
@@ -84,12 +84,12 @@ ou
 Você receberá um token JWT no response. Use esse token para autenticar requisições subsequentes.
 
 
-Endpoint de AUTENTICAÇÃO
+## Endpoint de AUTENTICAÇÃO
 
 HttpPost /api/auth/login
 Realizar login e gerar um token JWT.
 
-Todos os endpoints de USUÁRIOS:
+## Todos os endpoints de USUÁRIOS:
 
 HttpPost /api/User
 Adicionar um novo usuário.
@@ -112,7 +112,7 @@ Buscar um usuário pelo ID.
 HttpGet /api/User/email/{email}
 Buscar um usuário pelo email.
 
-Todos os endpoints de PRODUTOS:
+## Todos os endpoints de PRODUTOS:
 
 HttpPost /api/Product
 Adicionar um novo produto.
@@ -145,7 +145,7 @@ HttpGet /api/Product/GetByAvailable/false
 Buscar produtos indisponíveis.
 
 
-Todos os endpoints de COMPRAS:
+## Todos os endpoints de COMPRAS:
 
 HttpPost /api/Purchase
 Criar uma nova compra.
@@ -178,7 +178,7 @@ HttpGet /api/Purchase/GetByProduct/{productId}
 Buscar todas as compras por um ID de produto específico.
 
 
-Todos os endpoints de APORTES:
+## Todos os endpoints de APORTES:
 
 HttpPost /api/Contribution
 Adicionar uma nova contribuição.
