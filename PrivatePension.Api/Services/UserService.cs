@@ -27,6 +27,9 @@ namespace Services
             if (validatePassword.Status == false)
                 return validatePassword;
 
+            if (user.Role != Domain.Enums.UserRolesEnum.admin && user.Role != Domain.Enums.UserRolesEnum.client)
+                return Notifies.Error("Invalid user role");
+
             user.Password = _passwordHasherService.HashPassword(user, user.Password);
 
             var userEmail = await _userRepository.GetByEmail(user.Email);
@@ -48,12 +51,15 @@ namespace Services
             if (validate.Status == false)
                 return validate;
 
+            if (user.Role != Domain.Enums.UserRolesEnum.admin && user.Role != Domain.Enums.UserRolesEnum.client)
+                return Notifies.Error("Invalid user role");
+
             var searchUser = await _userRepository.GetById(user.Id);
             if (searchUser == null)
                 return Notifies.Error("User not found");
             searchUser.UserName = user.UserName;
             searchUser.Email = user.Email;
-            if (user.Password != "" && user.Password != null)
+            if (user.Password != "" && user.Password != null && user.Password != searchUser.Password)
             {
                 var validatePassword = ValidPassword(user.Password);
                 if (validatePassword.Status == false)
