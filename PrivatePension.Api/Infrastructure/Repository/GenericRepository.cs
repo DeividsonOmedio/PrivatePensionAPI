@@ -1,16 +1,42 @@
-﻿using Domain.Interfaces.InterfacesRepositories;
+﻿using Domain.Entities;
+using Domain.Interfaces.InterfacesRepositories;
 using Domain.Notifications;
+using Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository
 {
-    public class GenericRepository<T>(DbContext context) : IGenericRepository<T> where T : class
+    public class GenericRepository<T>(ContextBase context) : IGenericRepository<T> where T : class
     {
-        protected readonly DbContext _context = context;
+        protected readonly ContextBase _context = context;
         protected readonly DbSet<T> _dbSet = context.Set<T>();
 
         public async Task<Notifies> Add(T entity)
         {
+            
+            if (entity is Purchase purchase) //Para não adicionar novo produto e novo cliente junto a compra
+            {
+                _context.Entry(purchase).State = EntityState.Added;
+
+                if (purchase.Product != null)
+                {
+                    _context.Entry(purchase.Product).State = EntityState.Unchanged;
+                }
+
+                if (purchase.Client != null)
+                {
+                    _context.Entry(purchase.Client).State = EntityState.Unchanged;
+                }
+            }
+            if (entity is Contribution contribution) //Para não adicionar nova compra junto a contribuiçao
+            {
+                _context.Entry(contribution).State = EntityState.Added;
+
+                if (contribution.Purchase != null)
+                {
+                    _context.Entry(contribution.Purchase).State = EntityState.Unchanged;
+                }
+            }
             await _dbSet.AddAsync(entity);
             await _context.SaveChangesAsync();
             return Notifies.Success();

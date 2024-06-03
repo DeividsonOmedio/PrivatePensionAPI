@@ -8,14 +8,14 @@ namespace Services
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepository;
+        private readonly IComplexQueriesProductRepository _complexQueriesProductRepository;
         private readonly IUserService _userService;
-        private readonly IPurchaseService _purchaseService;
 
-        public ProductService(IProductRepository productRepository, IUserService userService, IPurchaseService purchaseService)
+        public ProductService(IProductRepository productRepository, IUserService userService, IComplexQueriesProductRepository complexQueriesProductRepository)
         {
             _productRepository = productRepository;
+            _complexQueriesProductRepository = complexQueriesProductRepository;
             _userService = userService;
-            _purchaseService = purchaseService;
         }
 
         public async Task<Notifies> AddProduct(Product product)
@@ -73,20 +73,28 @@ namespace Services
 
             return await _productRepository.GetById(id);
         }
-
-        public async Task<List<Product>> GetProductsByUserNotPurchase(int userId)
+        public async Task<List<Product>> GetProductsPurchasedByUser(int userId)
         {
-           var user = await _userService.GetUserById(userId);
-           if (user == null)
+            var user = await _userService.GetUserById(userId);
+            if (user == null)
                 return null;
 
-            var purchases = await _purchaseService.GetByUser(userId);
-            var purchasedProductIds = purchases.Select(p => p.ProductId).ToList();
+            if (user.Role != Domain.Enums.UserRolesEnum.admin && user.Id != userId)
+                return null;
 
-            var allProducts = await GetAllProducts();
-            var productsNotPurchased = allProducts.Where(p => !purchasedProductIds.Contains(p.Id)).ToList();
+            return await _complexQueriesProductRepository.GetProductsPurchasedByUser(userId);
+        }
 
-            return productsNotPurchased;
+        public async Task<List<Product>> GetProductsNotPurchasedByUser(int userId)
+        {
+            var user = await _userService.GetUserById(userId);
+            if (user == null)
+                return null;
+
+            if (user.Role != Domain.Enums.UserRolesEnum.admin && user.Id != userId)
+                return null;
+
+            return await _complexQueriesProductRepository.GetProductsNotPurchasedByUser(userId);
         }
 
         public Notifies ValidateProduct(Product product)
@@ -99,7 +107,7 @@ namespace Services
             if (validateDescription.Status == false)
                 return validateDescription;
 
-            var validatePrice = Notifies.ValidatePropertyDecimal(product.Price, "Value");
+            var validatePrice = Notifies.ValidatePropertyDecimal(product.Price, "Price");
             if (validatePrice.Status == false)
                 return validatePrice;
 

@@ -8,5 +8,6 @@ namespace Domain.Interfaces.InterfacesRepositories
         Task<List<Purchase>> GetByProduct(int productId);
         Task<List<Purchase>> GetByDate(DateTime date);
         Task<List<Purchase>> GetByStatus(bool status);
+        Task<Purchase?> GetByProductAndUser(int productId, int userId);
     }
 }

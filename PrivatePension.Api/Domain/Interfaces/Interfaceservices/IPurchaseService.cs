@@ -10,6 +10,7 @@ namespace Domain.Interfaces.Interfaceservices
         Task<Notifies> DeletePurchase(int purchaseId);
         Task<Purchase?> GetPurchaseById(int id);
         Task<List<Purchase>> GetByUser(int userId);
+        Task<Purchase?> GetByProductAndUser(int productId, int userId);
         Task<List<Purchase>> GetAllPurchases();
         Task<List<Purchase>> GetByProduct(int productId);
         Task<List<Purchase>> GetByDate(DateTime date);

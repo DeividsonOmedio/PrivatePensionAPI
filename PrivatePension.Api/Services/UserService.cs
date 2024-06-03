@@ -2,18 +2,35 @@ using Domain.Entities;
 using Domain.Interfaces.Interfaceservices;
 using Domain.Interfaces.InterfacesRepositories;
 using Domain.Notifications;
+using Microsoft.AspNetCore.Identity;
 
 namespace Services
 {
-    public class UserService(IUserRepository userRepository) : IUserService
+    public class UserService : IUserService
     {
-        private readonly IUserRepository _userRepository = userRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly PasswordHasherService _passwordHasherService;
+
+        public UserService(IUserRepository userRepository, PasswordHasherService passwordHasherService)
+        {
+            _userRepository = userRepository;
+            _passwordHasherService = passwordHasherService;
+        }
 
         public async Task<Notifies> AddUser(User user)
         {
             var validate = ValidateUser(user);
             if (validate.Status == false)
                 return validate;
+
+            var validatePassword = ValidPassword(user.Password);
+            if (validatePassword.Status == false)
+                return validatePassword;
+
+            if (user.Role != Domain.Enums.UserRolesEnum.admin && user.Role != Domain.Enums.UserRolesEnum.client)
+                return Notifies.Error("Invalid user role");
+
+            user.Password = _passwordHasherService.HashPassword(user, user.Password);
 
             var userEmail = await _userRepository.GetByEmail(user.Email);
             if (userEmail != null)
@@ -23,6 +40,56 @@ namespace Services
                 user.WalletBalance = null;
 
             return await _userRepository.Add(user);
+        }
+
+        public async Task<Notifies> UpdateUser(User user)
+        {
+            if (user.Id <= 0)
+                return Notifies.Error("Invalid Id");
+
+            var validate = ValidateUser(user);
+            if (validate.Status == false)
+                return validate;
+
+            if (user.Role != Domain.Enums.UserRolesEnum.admin && user.Role != Domain.Enums.UserRolesEnum.client)
+                return Notifies.Error("Invalid user role");
+
+            var searchUser = await _userRepository.GetById(user.Id);
+            if (searchUser == null)
+                return Notifies.Error("User not found");
+            searchUser.UserName = user.UserName;
+            searchUser.Email = user.Email;
+            if (user.Password != "" && user.Password != null && user.Password != searchUser.Password)
+            {
+                var validatePassword = ValidPassword(user.Password);
+                if (validatePassword.Status == false)
+                    return validatePassword;
+
+                var passwordHasher = new PasswordHasher<User>();
+                user.Password = passwordHasher.HashPassword(user, user.Password);
+                searchUser.Password = user.Password;
+            }
+
+            return await _userRepository.Update(searchUser);
+        }
+
+
+        public async Task<Notifies> UpdateWalletBalance(int id, decimal walletBalance)
+        {
+            if (id <= 0)
+                return Notifies.Error("Invalid Id");
+
+            var user = await _userRepository.GetById(id);
+
+            if (user == null)
+                return Notifies.Error("User not found");
+            
+            if (user.Role == Domain.Enums.UserRolesEnum.admin)
+                return Notifies.Error("Admin cannot have a wallet balance");
+
+            user.WalletBalance += walletBalance;
+
+            return await _userRepository.Update(user);
         }
 
         public async Task<Notifies> DeleteUser(int userId)
@@ -54,24 +121,18 @@ namespace Services
             return await _userRepository.GetById(id);
         }
 
-        public async Task<Notifies> UpdateUser(User user)
+        public async Task<User?> ValidateUserCredentials(string email, string password)
         {
-            var validate = ValidateUser(user);
-            if (validate.Status == false)
-                return validate;
+            var user = await _userRepository.GetByEmail(email);
+            if (user == null)
+                return null;
 
-            if (user.Role == Domain.Enums.UserRolesEnum.admin)
-                user.WalletBalance = null;
-
-            return await _userRepository.Update(user);
+            var result = _passwordHasherService.VerifyPassword(user, password);
+            return result ? user : null;
         }
 
         public Notifies ValidateUser(User user)
         {
-            var validateId = Notifies.ValidatePropertyInt(user.Id, "Id");
-            if (validateId.Status == false)
-                return validateId;
-
             var validateName = Notifies.ValidatePropertyString(user.UserName, "Name");
             if (validateName.Status == false)
                 return validateName;
@@ -80,9 +141,17 @@ namespace Services
             if (validateEmail.Status == false)
                 return validateEmail;
 
-            var validatePassword = Notifies.ValidatePropertyString(user.Password, "Password");
+            return Notifies.Success();
+        }
+
+        public Notifies ValidPassword(string password)
+        {
+            var validatePassword = Notifies.ValidatePropertyString(password, "Password");
             if (validatePassword.Status == false)
                 return validatePassword;
+
+            if (password.Length < 6)
+                return Notifies.Error("Password must be at least 6 characters long");
 
             return Notifies.Success();
         }

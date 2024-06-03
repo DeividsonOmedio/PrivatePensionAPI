@@ -10,16 +10,24 @@ namespace Services
         private readonly IPurchaseRepository _purchaseRepository;
         private readonly IUserService _userService;
         private readonly IProductService _productService;
+        private readonly IUserLogged _userLogged;
 
-        public PurchaseService(IPurchaseRepository purchaseRepository, IProductService productService, IUserService userService)
+        public PurchaseService(IPurchaseRepository purchaseRepository, IProductService productService, IUserService userService, IUserLogged userLogged)
         {
             _purchaseRepository = purchaseRepository;
             _productService = productService;
             _userService = userService;
+            _userLogged = userLogged;
         }
 
         public async Task<Notifies> AddPurchase(Purchase purchase)
         {
+            int currentUserId = _userLogged.GetCurrentUserId();
+
+            if (purchase.ClientId != currentUserId)
+            {
+                return Notifies.Error("User cannot make a purchase for another user.");
+            }
 
             var validatePurchase = ValidatePurchase(purchase);
             if (validatePurchase.Status == false)
@@ -28,18 +36,38 @@ namespace Services
             var product = await _productService.GetProductById(purchase.ProductId);
             if (product == null)
                 return Notifies.Error("Product not found");
+            if(!product.Available)
+                return Notifies.Error("Product not available");
+            purchase.Product = product;
 
+            var purchaseExists = await _productService.GetProductsPurchasedByUser(purchase.ClientId);
+            if (purchaseExists != null && purchaseExists.Any(p => p.Id == purchase.ProductId))
+            {
+                return Notifies.Error("Product already purchased");
+            }
             var user = await _userService.GetUserById(purchase.ClientId);
             if (user == null)
                 return Notifies.Error("User not found");
+            if (user.Role == Domain.Enums.UserRolesEnum.admin)
+                return Notifies.Error("Admins can't make purchases");
+            purchase.Client = user;
 
             if(user.WalletBalance < product.Price)
                 return Notifies.Error("Insufficient balance");
+            user.WalletBalance -= product.Price;
 
             purchase.PurchaseDate = DateTime.Now;
             purchase.IsApproved = false;
 
-            return await _purchaseRepository.Add(purchase);
+            var result = await _purchaseRepository.Add(purchase);
+            if (result.Status == false)
+                return result;
+
+            var UpdateUserWallet = await _userService.UpdateUser(user);
+            if (UpdateUserWallet.Status == false)
+                return Notifies.Error("Erro no servidor");
+
+            return result;
         }
 
         public async Task<Notifies> UpdatePurchaseIsApproved(int purchaseId)
@@ -61,6 +89,17 @@ namespace Services
 
             if (purchase.IsApproved)
                 return Notifies.Error("Purchase already approved");
+
+            var user = await _userService.GetUserById(purchase.ClientId);
+            if (user == null)
+                return Notifies.Error("User not found");
+
+            var product = await _productService.GetProductById(purchase.ProductId);
+            if (product == null)
+                return Notifies.Error("Product not found");
+
+            user.WalletBalance += product.Price;
+            await _userService.UpdateUser(user);
 
             return await _purchaseRepository.Delete(purchase);
         }
@@ -88,6 +127,15 @@ namespace Services
             return await _purchaseRepository.GetByUser(userId);
         }
 
+        public async Task<Purchase?> GetByProductAndUser(int productId, int userId)
+        {
+            var user = await _userService.GetUserById(userId);
+            if (user == null)
+                return null;
+
+            return await _purchaseRepository.GetByProductAndUser(productId ,userId);
+        }
+
         public async Task<List<Purchase>> GetByDate(DateTime date)
         {
             return await _purchaseRepository.GetByDate(date);
@@ -110,7 +158,7 @@ namespace Services
         public Notifies ValidatePurchase(Purchase purchase)
         {
             var validateClientId = Notifies.ValidatePropertyInt(purchase.ClientId, "Client Id");
-            if (validateClientId.Status == false)
+            if (validateClientId.Status == false)   
                 return validateClientId;
 
             var validateProductId = Notifies.ValidatePropertyInt(purchase.ProductId, "Product Id");

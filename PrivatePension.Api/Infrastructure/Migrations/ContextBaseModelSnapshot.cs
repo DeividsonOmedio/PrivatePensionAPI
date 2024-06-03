@@ -59,11 +59,13 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -76,7 +78,7 @@ namespace Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            Available = false,
+                            Available = true,
                             Description = "O Renda Fixa Crédito Privado II é um fundo que tem títulos de crédito privado selecionados pela BRAM ",
                             Name = "Crédito Privado II RF",
                             Price = 300m
@@ -84,7 +86,7 @@ namespace Infrastructure.Migrations
                         new
                         {
                             Id = 2,
-                            Available = false,
+                            Available = true,
                             Description = "Investir em títulos públicos e privados pós fixados, com rentabilidade atrelada ao CDI",
                             Name = "Crédito Privado Premium RF",
                             Price = 500m
@@ -130,43 +132,44 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Password")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
-                    b.Property<string>("Username")
+                    b.Property<string>("UserName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal?>("WalletBalance")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Clients");
+                    b.ToTable("Users");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
                             Email = "admin@admin.com",
-                            Password = "AQAAAAIAAYagAAAAEMvNY7s6kS2T8HnKi/yl+GSELUKIrTxU50ET30KscoqaHS1pOiDqqny8DjLI3P3pig==",
+                            Password = "AQAAAAIAAYagAAAAEIfgip0++4f8Pnmh0AbgMThPSzSxPgrfFELwjRsBOnLqfvFImgUmJ0V5wVav/r0EfA==",
                             Role = 1,
-                            Username = "Admin 1"
+                            UserName = "Admin 1"
                         },
                         new
                         {
                             Id = 2,
-                            Email = "cliente2@client.com",
-                            Password = "AQAAAAIAAYagAAAAEC0IJzvxwP0gbDpkU0ddepJfBS/ZwlQK6fueapmL6sOLlyi2BilBKSWKGKw1AOHJAA==",
+                            Email = "cliente1@client.com",
+                            Password = "AQAAAAIAAYagAAAAEKhl42PhWbORdLH245FSK10yjrHFzI+1DIl0xnRrcm6BAzGm5VXPkFi7G8AUjeCbRg==",
                             Role = 0,
-                            Username = "Cliente 1",
-                            WalletBalance = 300m
+                            UserName = "Cliente 1",
+                            WalletBalance = 1300m
                         });
                 });
 
@@ -186,13 +189,13 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.User", "Client")
                         .WithMany()
                         .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Client");

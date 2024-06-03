@@ -14,43 +14,44 @@ namespace PrivatePension.Tests
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IPurchaseService> _purchaseServiceMock;
         private readonly ContributionService _contributionService;
+        private readonly Mock<IUserLogged> _userLoggedMock;
 
         public ContributionServiceTest()
         {
             _contributionRepositoryMock = new Mock<IContributionRepository>();
             _userServiceMock = new Mock<IUserService>();
             _purchaseServiceMock = new Mock<IPurchaseService>();
-            _contributionService = new ContributionService(_contributionRepositoryMock.Object, _userServiceMock.Object, _purchaseServiceMock.Object);
+            _userLoggedMock = new Mock<IUserLogged>();
+            _contributionService = new ContributionService(_contributionRepositoryMock.Object, _userServiceMock.Object, _purchaseServiceMock.Object, _userLoggedMock.Object);
         }
 
         [Fact]
         public async Task AddContribution_ShouldBeOk()
         {
-
-            var faker = new Faker();
             var contribution = new Contribution
             {
-                Id = faker.Random.Int(),
-                PurchaseId = faker.Random.Int(1, 1000),
-                Amount = faker.Finance.Amount(1, 1000),
-                ContributionDate = DateTime.Now
+                Id = 1,
+                Amount = 100,
+                PurchaseId = 1
             };
 
             var purchase = new Purchase
             {
-                Id = contribution.PurchaseId,
-                ClientId = faker.Random.Int(1, 1000),
+                Id = 1,
+                ClientId = 1,
                 IsApproved = true
             };
 
             var user = new User
             {
-                Id = purchase.ClientId,
-                WalletBalance = contribution.Amount + 100
+                Id = 1,
+                WalletBalance = 200
             };
 
+            _userLoggedMock.Setup(u => u.GetCurrentUserId()).Returns(user.Id);
             _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
             _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
+            _userServiceMock.Setup(u => u.UpdateUser(user)).ReturnsAsync(Notifies.Success());
             _contributionRepositoryMock.Setup(c => c.Add(contribution)).ReturnsAsync(Notifies.Success());
 
             var result = await _contributionService.AddContribution(contribution);
@@ -125,7 +126,7 @@ namespace PrivatePension.Tests
             var result = await _contributionService.AddContribution(contribution);
 
             Assert.False(result.Status);
-            Assert.Equal("Insufficient funds", result.Message);
+            Assert.Equal("User cannot make a purchase for another user.", result.Message);
         }
 
         [Fact]
@@ -171,6 +172,7 @@ namespace PrivatePension.Tests
                 WalletBalance = 5000
             };
 
+            _userLoggedMock.Setup(u => u.GetCurrentUserId()).Returns(user.Id);
             _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
             _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
 
@@ -238,6 +240,7 @@ namespace PrivatePension.Tests
                 WalletBalance = 500
             };
 
+            _userLoggedMock.Setup(u => u.GetCurrentUserId()).Returns(user.Id);
             _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
             _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
 
@@ -272,6 +275,7 @@ namespace PrivatePension.Tests
                 WalletBalance = 5000
             };
 
+            _userLoggedMock.Setup(u => u.GetCurrentUserId()).Returns(user.Id);
             _purchaseServiceMock.Setup(p => p.GetPurchaseById(contribution.PurchaseId)).ReturnsAsync(purchase);
             _userServiceMock.Setup(u => u.GetUserById(purchase.ClientId)).ReturnsAsync(user);
 

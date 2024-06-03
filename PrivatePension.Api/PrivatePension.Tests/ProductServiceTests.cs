@@ -12,15 +12,15 @@ namespace PrivatePension.Tests
     {
         private readonly Mock<IProductRepository> _productRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
-        private readonly Mock<IPurchaseService> _purchaseServiceMock;
         private readonly ProductService _productService;
+        private readonly Mock<IComplexQueriesProductRepository> _complexQueriesProductRepository;
 
         public ProductServiceTests()
         {
             _productRepositoryMock = new Mock<IProductRepository>();
             _userServiceMock = new Mock<IUserService>();
-            _purchaseServiceMock = new Mock<IPurchaseService>();
-            _productService = new ProductService(_productRepositoryMock.Object, _userServiceMock.Object, _purchaseServiceMock.Object);
+            _complexQueriesProductRepository = new Mock<IComplexQueriesProductRepository>();
+            _productService = new ProductService(_productRepositoryMock.Object, _userServiceMock.Object, _complexQueriesProductRepository.Object);
         }
 
         [Fact]
